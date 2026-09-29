@@ -219,6 +219,14 @@ import Cocoa
             }
             
             /// Get accelerationCurve
+            /// Windows-style scrolling
+            ///     Only for plain scrolling (and the horizontal scroll modifier). See `useWindowsStepSize`.
+            if new.windowsMode && !useQuickMod && !usePreciseMod
+                && (modifiers.effectMod == kMFScrollEffectModificationNone || modifiers.effectMod == kMFScrollEffectModificationHorizontalScroll) {
+                new.useWindowsStepSize = true
+                new.fastScrollCurve = nil /// No speedup when scrolling fast
+            }
+            
             if u_speed == kMFScrollSpeedSystem && !usePreciseMod && !useQuickMod {
                 new.accelerationCurve = nil
             } else {
@@ -256,6 +264,26 @@ import Cocoa
     }
     @objc var useAppleAcceleration: Bool {
         return accelerationCurve == nil
+    }
+    
+    // MARK: Windows-style scrolling
+    
+    /// `Scroll.windowsMode`: Every tick of the scroll wheel scrolls the same distance, without acceleration – like on Windows.
+    @objc lazy var windowsMode: Bool = {
+        return (c("windowsMode") as? Bool) ?? false
+    }()
+    
+    /// Whether Scroll.m should use `windowsStepSize` for this config. Set in `scrollConfig(modifiers:inputAxis:display:)`.
+    ///     Windows-style scrolling only applies to plain scrolling. The Swift and Precise modifiers and scroll gestures (zoom, Mission Control, etc.) keep their own acceleration.
+    @objc var useWindowsStepSize: Bool = false
+    
+    /// Pixels per tick for Windows-style scrolling. (1 line ≈ 10 px. Windows scrolls 3 lines per tick by default.)
+    @objc var windowsStepSize: Int64 {
+        switch u_speed {
+        case kMFScrollSpeedLow:     return 20 /// 2 lines
+        case kMFScrollSpeedHigh:    return 50 /// 5 lines
+        default:                    return 30 /// 3 lines (Medium and System)
+        }
     }
     
     // MARK: Invert Direction

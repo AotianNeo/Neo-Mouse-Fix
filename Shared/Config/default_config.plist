@@ -21,6 +21,8 @@
 		<true/>
 		<key>precise</key>
 		<false/>
+		<key>windowsMode</key>
+		<false/>
 		<key>smooth</key>
 		<string>high</string>
 		<key>speed</key>

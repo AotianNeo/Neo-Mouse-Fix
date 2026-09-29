@@ -13845,6 +13845,64 @@
         }
       }
     },
+    "scroll.windows-mode" : {
+      "comment" : "Toggle on the Scrolling tab for Windows-style linear scrolling (no acceleration, same distance for every notch of the scroll wheel).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows-Style Scrolling"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows 風格捲動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows 风格滚动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows 風格捲動"
+          }
+        }
+      }
+    },
+    "scroll.windows-mode.hint" : {
+      "comment" : "Toggle on the Scrolling tab for Windows-style linear scrolling (no acceleration, same distance for every notch of the scroll wheel).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every notch of the scroll wheel scrolls the same distance, without acceleration, like on Windows. Choose the distance with Speed"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滾輪每一格都捲動相同的距離，沒有加速，和 Windows 一樣。每格的距離由「速度」決定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滚轮每一格都滚动相同的距离，没有加速，和 Windows 一样。每格的距离由“速度”决定"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滾輪每一格都捲動相同的距離，沒有加速，和 Windows 一樣。每格的距離由「速度」決定"
+          }
+        }
+      }
+    },
     "system-settings-name" : {
       "comment" : "Note: The name of the system settings app in macOS 13 Ventura and later.",
       "localizations" : {

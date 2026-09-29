@@ -19,6 +19,7 @@ class ScrollTabController: NSViewController {
     var trackpad = ConfigValue<Bool>(configPath: "Scroll.trackpadSimulation")
     var reverseDirection = ConfigValue<Bool>(configPath: "Scroll.reverseDirection")
     var scrollSpeed = ConfigValue<String>(configPath: "Scroll.speed")
+    var windowsMode = ConfigValue<Bool>(configPath: "Scroll.windowsMode")
     var precise = ConfigValue<Bool>(configPath: "Scroll.precise")
     var horizontalMod = ConfigValue<UInt>(configPath: "Scroll.modifiers.horizontal")
     var zoomMod = ConfigValue<UInt>(configPath: "Scroll.modifiers.zoom")
@@ -85,6 +86,48 @@ class ScrollTabController: NSViewController {
     
     /// Init
     
+    private func makeWindowsModeSection() -> NSView {
+        
+        /// Toggle for Windows-style scrolling (`Scroll.windowsMode`, see `ScrollConfig.windowsMode`)
+        ///     Built in code instead of in Main.storyboard. Mirrors the layout of the 'Trackpad Simulation' toggle and hint.
+        
+        let toggle = NSButton(checkboxWithTitle: MFLocalizedString("scroll.windows-mode", comment: ""), target: nil, action: nil)
+        windowsMode.bindingTarget <~ toggle.reactive.boolValues
+        toggle.reactive.boolValue <~ windowsMode.producer
+        
+        let hint = NSTextField(wrappingLabelWithString: MFLocalizedString("scroll.windows-mode.hint", comment: ""))
+        hint.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        hint.textColor = .secondaryLabelColor
+        hint.controlSize = .small
+        hint.isSelectable = true
+        
+        let indent = NSView()
+        hint.translatesAutoresizingMaskIntoConstraints = false
+        indent.addSubview(hint)
+        NSLayoutConstraint.activate([
+            hint.leadingAnchor.constraint(equalTo: indent.leadingAnchor, constant: 20),
+            hint.trailingAnchor.constraint(equalTo: indent.trailingAnchor),
+            hint.topAnchor.constraint(equalTo: indent.topAnchor),
+            hint.bottomAnchor.constraint(equalTo: indent.bottomAnchor),
+        ])
+        
+        let section = NSStackView(views: [toggle, indent])
+        section.orientation = .vertical
+        section.alignment = .leading
+        section.translatesAutoresizingMaskIntoConstraints = false
+        indent.widthAnchor.constraint(equalTo: section.widthAnchor).isActive = true
+        
+        /// Don't stretch vertically
+        ///     TabViewController measures a tab after making the window huge. The storyboard views all hug their content with priority 750+, so the tab keeps its natural height. Views created in code default to 250 and would stretch – making the window ~100000 pt tall.
+        ///     Note: Hugging only affects views with an intrinsic size, so it's the checkbox and the hint that matter here.
+        for view in [toggle, hint] {
+            view.setContentHuggingPriority(.required, for: .vertical)
+        }
+        section.setHuggingPriority(.required, for: .vertical)
+        
+        return section
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -110,6 +153,13 @@ class ScrollTabController: NSViewController {
         /// Natural direction
         reverseDirection.bindingTarget <~ reverseDirectionToggle.reactive.boolValues
         reverseDirectionToggle.reactive.boolValue <~ reverseDirection.producer
+        
+        /// Windows-style scrolling
+        let windowsModeSection = makeWindowsModeSection()
+        if let index = masterStack.arrangedSubviews.firstIndex(of: reverseDirectionToggle) {
+            masterStack.insertArrangedSubview(windowsModeSection, at: index + 1)
+            windowsModeSection.widthAnchor.constraint(equalTo: masterStack.widthAnchor).isActive = true /// Makes the hint wrap
+        }
         
         /// Scroll speed
         scrollSpeed.bindingTarget <~ speedPicker.reactive.selectedIdentifiers.map({ identifier in

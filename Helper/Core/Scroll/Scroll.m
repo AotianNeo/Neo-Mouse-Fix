@@ -425,7 +425,12 @@ static void heavyProcessing(CGEventRef event, int64_t scrollDeltaAxis1, int64_t 
     
     int64_t pxToScrollForThisTick;
     
-    if (_scrollConfig.useAppleAcceleration) {
+    if (_scrollConfig.useWindowsStepSize) {
+        
+        /// Windows-style scrolling: Every tick scrolls the same distance, no matter how fast the user scrolls
+        pxToScrollForThisTick = _scrollConfig.windowsStepSize;
+        
+    } else if (_scrollConfig.useAppleAcceleration) {
         
         pxToScrollForThisTick = scrollDelta;
         
