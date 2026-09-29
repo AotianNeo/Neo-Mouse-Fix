@@ -345,6 +345,24 @@ void setSuppressionIntervalWithTimeInterval(CFTimeInterval interval) {
 
 /// Puppet cursor
 
+static CGFloat systemPointerScale(void) {
+    
+    /// [Fork] The pointer size from System Settings > Accessibility > Display > Pointer Size (1.0 - 4.0)
+    ///     `NSCursor.arrowCursor.image` always has the default size, so without this the puppet cursor looks smaller than the real one when the user enlarged the pointer.
+    
+    CFPropertyListRef value = CFPreferencesCopyAppValue(CFSTR("mouseDriverCursorSize"), CFSTR("com.apple.universalaccess"));
+    CGFloat scale = 1.0;
+    if (value != NULL) {
+        if (CFGetTypeID(value) == CFNumberGetTypeID()) {
+            double v = 1.0;
+            CFNumberGetValue((CFNumberRef)value, kCFNumberDoubleType, &v);
+            scale = v;
+        }
+        CFRelease(value);
+    }
+    return MIN(MAX(scale, 1.0), 4.0);
+}
+
 + (void)drawPuppetCursor:(BOOL)draw fresh:(BOOL)fresh {
     
     /// Efficient undraw
@@ -371,12 +389,16 @@ void setSuppressionIntervalWithTimeInterval(CFTimeInterval interval) {
 //        _puppetCursor = NSCursor.currentSystemCursor;
 //    }
     
+    /// Match the system pointer size
+    static CGFloat scale = 1.0;
+    if (fresh) scale = systemPointerScale();
+    
     /// Subtract hotspot to get puppet image loc
-    CGPoint hotspot = _puppetCursor.hotSpot;
+    CGPoint hotspot = CGPointMake(_puppetCursor.hotSpot.x * scale, _puppetCursor.hotSpot.y * scale);
     CGPoint imageLoc = CGPointMake(loc.x - hotspot.x, loc.y - hotspot.y);
     
     /// Unflip coordinates to be compatible with Cocoa
-    NSRect puppetImageFrame = NSMakeRect(imageLoc.x, imageLoc.y, _puppetCursor.image.size.width, _puppetCursor.image.size.height);
+    NSRect puppetImageFrame = NSMakeRect(imageLoc.x, imageLoc.y, _puppetCursor.image.size.width * scale, _puppetCursor.image.size.height * scale);
     NSRect puppetImageFrameUnflipped = [SharedUtility quartzToCocoaScreenSpace:puppetImageFrame];
     
     /// Define mainthread workload
@@ -395,6 +417,7 @@ void setSuppressionIntervalWithTimeInterval(CFTimeInterval interval) {
         if (fresh) {
             /// Store cursor image into puppet view
             _puppetCursorView.image = _puppetCursor.image;
+            _puppetCursorView.imageScaling = NSImageScaleProportionallyUpOrDown; /// [Fork] So the image fills the scaled frame
         }
         
         /// Draw/move puppet cursor image

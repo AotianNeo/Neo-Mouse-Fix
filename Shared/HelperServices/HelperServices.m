@@ -62,6 +62,7 @@
 #import "SharedUtility.h"
 #import "MFMessagePort.h"
 #import <ServiceManagement/ServiceManagement.h>
+#import <Security/Security.h>
 #import <sys/sysctl.h>
 #import <sys/types.h>
 #import "MFMessagePort.h"
@@ -76,6 +77,37 @@
 #endif
 
 @implementation HelperServices
+
+#pragma mark - Self-signed builds
+
+static BOOL runningSelfSignedBuild(void) {
+    
+    /// [Fork] Is this a local build that isn't signed with an Apple Developer Team ID? (E.g. signed with a self-signed certificate like `LocalMacMouseFixSigner`.)
+    ///
+    /// Such builds use the pre-Ventura launchd.plist method instead of SMAppService, even on macOS 13.0+:
+    ///     - The system's SMAppService registration for the Helper is tied to the Team ID of the build that created it (the official one).
+    ///         Observed on macOS 27 [Sep 2026]: After enabling a self-signed build through SMAppService, launchd had no job for the Helper.
+    ///     - The registration uses the same label as a launchd.plist would under macOS 13.0+ (`kMFLaunchdHelperIdentifierSM`), so the two collide.
+    ///         -> The launchd.plist method uses `kMFLaunchdHelperIdentifier`, and we unregister the SMAppService residue when enabling.
+    
+    static BOOL result = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        SecCodeRef code = NULL;
+        SecStaticCodeRef staticCode = NULL;
+        CFDictionaryRef info = NULL;
+        if (SecCodeCopySelf(kSecCSDefaultFlags, &code) == errSecSuccess
+            && SecCodeCopyStaticCode(code, kSecCSDefaultFlags, &staticCode) == errSecSuccess
+            && SecCodeCopySigningInformation(staticCode, kSecCSSigningInformation, &info) == errSecSuccess) {
+            result = CFDictionaryGetValue(info, kSecCodeInfoTeamIdentifier) == NULL;
+        }
+        if (info)       CFRelease(info);
+        if (staticCode) CFRelease(staticCode);
+        if (code)       CFRelease(code);
+        DDLogInfo("HelperServices: runningSelfSignedBuild: %d", result);
+    });
+    return result;
+}
 
 #pragma mark - Interface...
 ///
@@ -156,6 +188,16 @@
     
     if (@available(macOS 13.0, *)) {
         
+        if (runningSelfSignedBuild()) {
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0), ^{
+                /// Remove SMAppService residue, then use the launchd.plist method. See `runningSelfSignedBuild()`.
+                [self enableHelper_SM: NO];
+                removeServiceWithIdentifier(kMFLaunchdHelperIdentifierSM);
+                [self enableHelperAsUserAgent_PList: enable onComplete: onComplete];
+            });
+            return;
+        }
+        
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0), ^{
                 
             /// Cleanup
@@ -191,47 +233,54 @@
         });
         
     } else {
+        [self enableHelperAsUserAgent_PList: enable onComplete: onComplete];
+    }
+}
+
++ (void)enableHelperAsUserAgent_PList: (BOOL)enable onComplete: (void (^ _Nullable)(NSError * _Nullable error))onComplete {
+    
+    /// The launchd.plist method. Used pre-Ventura, and by self-signed builds (See `runningSelfSignedBuild()`)
+    
+    
+    /// Generate / repair launchd.plist
+    [HelperServices repairLaunchdPlist];
+    
+    /// Cleanup
+    ///     Remove residue & prevent interference
+    {
+        /// Remove old prefpane launchd.plist
+        /// Notes:
+        /// - We could only do this only if strangeHelperIsRegisteredWithLaunchd, but users have been having some weirdd issues after upgrading to the app version and I don't know why. I feel like this might make things slightly more robust.
+        removePrefpaneLaunchdPlist();
         
-        /// Generate / repair launchd.plist
-        [HelperServices repairLaunchdPlist];
-        
-        /// Cleanup
-        ///     Remove residue & prevent interference
-        {
-            /// Remove old prefpane launchd.plist
-            /// Notes:
-            /// - We could only do this only if strangeHelperIsRegisteredWithLaunchd, but users have been having some weirdd issues after upgrading to the app version and I don't know why. I feel like this might make things slightly more robust.
-            removePrefpaneLaunchdPlist();
-            
-            /// Unregister strange helper
-            if ([self strangeHelperIsRegisteredWithLaunchdIdentifier: kMFLaunchdHelperIdentifier]) {
-                removeServiceWithIdentifier(kMFLaunchdHelperIdentifier);
-            }
-            
-            if (enable) {
-                
-                /// Kill & unregister if we're enabling
-                ///
-                /// Doing this because sometimes there's a weird bug where the main app won't recognize the helper as enabled even though it is. The code down below for enabling will then fail, when the user tries to check the enable checkbox.
-                /// So we're removing the helper from launchd before trying to enable to hopefully fix this. Edit: seems to fix it!
-                /// I'm pretty sure that if we didn't check for `launchdPathIsBundlePath` in `strangeHelperIsRegisteredWithLaunchd` this issue whave occured and we wouldn't need this workaround. But I'm not sure anymore why we do that so it's not smart to remove it.
-                /// Edit: I think the specific issue I saw only happens when there are two instances of MMF open at the same time.
-                
-                removeServiceWithIdentifier(kMFLaunchdHelperIdentifier);
-                
-                /// Kill non-launchd helpers
-                ///     Non-launchd helpers can only normally happen during debugging I think
-                [HelperServices terminateAllHelperInstances];
-                
-            }
+        /// Unregister strange helper
+        if ([self strangeHelperIsRegisteredWithLaunchdIdentifier: kMFLaunchdHelperIdentifier]) {
+            removeServiceWithIdentifier(kMFLaunchdHelperIdentifier);
         }
         
-        /// Enable helper
-        enableHelper_PList(enable);
-        
-        /// Call onComplete
-        if (onComplete != nil) onComplete(nil);
+        if (enable) {
+            
+            /// Kill & unregister if we're enabling
+            ///
+            /// Doing this because sometimes there's a weird bug where the main app won't recognize the helper as enabled even though it is. The code down below for enabling will then fail, when the user tries to check the enable checkbox.
+            /// So we're removing the helper from launchd before trying to enable to hopefully fix this. Edit: seems to fix it!
+            /// I'm pretty sure that if we didn't check for `launchdPathIsBundlePath` in `strangeHelperIsRegisteredWithLaunchd` this issue whave occured and we wouldn't need this workaround. But I'm not sure anymore why we do that so it's not smart to remove it.
+            /// Edit: I think the specific issue I saw only happens when there are two instances of MMF open at the same time.
+            
+            removeServiceWithIdentifier(kMFLaunchdHelperIdentifier);
+            
+            /// Kill non-launchd helpers
+            ///     Non-launchd helpers can only normally happen during debugging I think
+            [HelperServices terminateAllHelperInstances];
+            
+        }
     }
+    
+    /// Enable helper
+    enableHelper_PList(enable);
+    
+    /// Call onComplete
+    if (onComplete != nil) onComplete(nil);
 }
 
 #pragma mark Killall Helpers
@@ -453,13 +502,17 @@ static void enableHelper_PList(BOOL enable) {
     task.standardError = pipe;
     task.standardOutput = pipe;
     NSError *error;
-    task.terminationHandler = ^(NSTask *task) {
-        if (enable == NO) { /// Cleanup (delete launchdPlist) file after were done // We can't clean up immediately cause then launchctl will fail
-            removeLaunchdPlist();
-        }
-        DDLogInfo("launchctl terminated with stdout/stderr: %@, error: %@", [NSString.alloc initWithData:pipe.fileHandleForReading.readDataToEndOfFile encoding:NSUTF8StringEncoding], error);
-    };
     [task launchAndReturnError:&error];
+    
+    /// [Fork] Wait for launchctl before returning (This used to happen asynchronously in a `terminationHandler`.)
+    ///     Otherwise, when restarting the helper (disable -> enable), the cleanup from disabling could delete the launchd.plist that enabling had just written.
+    ///     Read the output before waiting: If launchctl filled the pipe buffer, it would block on writing while we block on waiting.
+    NSData *output = error == nil ? pipe.fileHandleForReading.readDataToEndOfFile : nil;
+    if (error == nil) [task waitUntilExit];
+    if (enable == NO) { /// Cleanup (delete launchdPlist) file after were done // We can't clean up immediately cause then launchctl will fail
+        removeLaunchdPlist();
+    }
+    DDLogInfo("launchctl terminated with stdout/stderr: %@, error: %@", output ? [NSString.alloc initWithData:output encoding:NSUTF8StringEncoding] : @"", error);
 }
 
 #pragma mark - Remove launchctl service
@@ -523,10 +576,9 @@ NSString *launchctl_print(NSString *identifier) {
 
 + (NSString *)launchdID {
     if (@available(macOS 13.0, *)) {
-        return kMFLaunchdHelperIdentifierSM;
-    } else {
-        return kMFLaunchdHelperIdentifier;
+        if (!runningSelfSignedBuild()) return kMFLaunchdHelperIdentifierSM;
     }
+    return kMFLaunchdHelperIdentifier;
 }
 
 + (BOOL) strangeHelperIsRegisteredWithLaunchdIdentifier: (NSString *)identifier {
@@ -534,8 +586,10 @@ NSString *launchctl_print(NSString *identifier) {
     /// Check if helper is registered with launchd from some other location
     
     if (@available(macOS 13.0, *)) {
-        assert(false && "This method's helper method +[executablePathForLaunchdIdentifier:] doesn't work on macOS 13.0+ as of [Sep 2025]");
-        return NO;
+        if (!runningSelfSignedBuild()) {
+            assert(false && "This method's helper method +[executablePathForLaunchdIdentifier:] doesn't work on macOS 13.0+ as of [Sep 2025]");
+            return NO;
+        }
     }
     NSString *launchdPath = [self executablePathForLaunchdIdentifier: identifier];
     BOOL launchdPathExists = launchdPath.length != 0;
@@ -575,10 +629,11 @@ NSString *launchctl_print(NSString *identifier) {
         /// - Despite this handling of the 'strange helper' situation, there are numerous reports of people not being able to open the app. See https://github.com/noah-nuebling/mac-mouse-fix/issues/648.
         /// - In all cases I observed, when launchd gets confused, SMAppService will say that it successfully launched the helper. (but really it will have launched a strange helper from another copy of MMF or it won't have launched anything at all) (I haven't studied the case where launchd doesn't launch anything at all much, so I'm not sure about that one.)
         
-        return @"";
-        
-    } else {
-        
+        if (!runningSelfSignedBuild()) return @""; /// Self-signed builds use the launchd.plist method -> Fall through. See `runningSelfSignedBuild()`.
+
+    }
+    {
+
         /// Note: This actually only works pre SMAppService. For services registered with SMAppService, it gets the executable path relative to the mainApp bundle which isn't that helpful.
         
         assert([identifier isEqual:kMFLaunchdHelperIdentifier]);
@@ -678,6 +733,10 @@ static void removeLaunchdPlist(void) {
             /// Check if the executable path inside the config file is correct, if not, set flag to false
             NSString *helperExecutablePathFromFile = [launchdPlist_dict objectForKey: @"Program"];
             if ( [helperExecutablePath isEqualToString: helperExecutablePathFromFile] == NO ) {
+                launchdPlist_executablePathIsCorrect = NO;
+            }
+            /// [Fork] Also repair a wrong label (e.g. a hand-written plist using `kMFLaunchdHelperIdentifierSM`, which collides with SMAppService)
+            if ( [kMFLaunchdHelperIdentifier isEqual: [launchdPlist_dict objectForKey: @"Label"]] == NO ) {
                 launchdPlist_executablePathIsCorrect = NO;
             }
             
