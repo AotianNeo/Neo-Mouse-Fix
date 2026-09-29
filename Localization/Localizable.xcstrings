@@ -1768,6 +1768,644 @@
       },
       "shouldTranslate" : false
     },
+    "auto-scroll.acceleration" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acceleration:"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加速度："
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加速度："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加速度："
+          }
+        }
+      }
+    },
+    "auto-scroll.acceleration.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How quickly scrolling speeds up as you move the mouse away from where you clicked"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滑鼠離點擊位置越遠，捲動加速得越快的程度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鼠标离点击位置越远，滚动加速得越快的程度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滑鼠離點擊位置越遠，捲動加速得越快的程度"
+          }
+        }
+      }
+    },
+    "auto-scroll.act-as-button-over-links" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Act as a Button over Links"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在連結上作為普通按鍵"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在链接上作为普通按键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在連結上作為普通按鍵"
+          }
+        }
+      }
+    },
+    "auto-scroll.act-as-button-over-links.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clicking a link, button or tab does a normal middle click, e.g. to open a link in a new tab"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在連結、按鈕或標籤頁上按一下時，執行普通的中鍵按一下，例如在新標籤頁中打開連結"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在链接、按钮或标签页上单击时，执行普通的中键单击，例如在新标签页中打开链接"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在連結、按鈕或標籤頁上按一下時，執行普通的中鍵按一下，例如在新標籤頁中打開連結"
+          }
+        }
+      }
+    },
+    "auto-scroll.animate-release" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Animate Release"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "放開後慣性滑動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "松开后惯性滑动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "放開後慣性滑動"
+          }
+        }
+      }
+    },
+    "auto-scroll.animate-release.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep gliding and slow down smoothly when Auto Scroll stops, like on a trackpad"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動捲動停止時繼續滑動並平滑減速，就像在觸控式軌跡板上一樣"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动滚动停止时继续滑动并平滑减速，就像在触控板上一样"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動捲動停止時繼續滑動並平滑減速，就像在觸控式軌跡板上一樣"
+          }
+        }
+      }
+    },
+    "auto-scroll.button" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Button:"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按鍵："
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按键："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按鍵："
+          }
+        }
+      }
+    },
+    "auto-scroll.click-to-toggle" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click to Toggle"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按一下切換"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单击切换"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按一下切換"
+          }
+        }
+      }
+    },
+    "auto-scroll.click-to-toggle.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click once to start scrolling, and click again to stop"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按一下開始捲動，再按一下停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单击一次开始滚动，再次单击停止"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按一下開始捲動，再按一下停止"
+          }
+        }
+      }
+    },
+    "auto-scroll.enable" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Auto Scroll"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用自動捲動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用自动滚动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用自動捲動"
+          }
+        }
+      }
+    },
+    "auto-scroll.enable.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto Scroll takes over this button. Clicks that don't start Auto Scroll, e.g. on links, are passed on as normal clicks"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動捲動會接管這個按鍵。不啟動自動捲動的點擊（例如在連結上）會作為普通點擊傳遞"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动滚动会接管这个按键。不启动自动滚动的点击（例如在链接上）会作为普通点击传递"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動捲動會接管這個按鍵。不啟動自動捲動的點擊（例如在連結上）會作為普通點擊傳遞"
+          }
+        }
+      }
+    },
+    "auto-scroll.hold-to-activate" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold to Activate"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住啟動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住启动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住啟動"
+          }
+        }
+      }
+    },
+    "auto-scroll.hold-to-activate.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold the button and move the mouse to scroll. Release it to stop"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住按鍵並移動滑鼠來捲動，放開即停止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住按键并移动鼠标来滚动，松开即停止"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住按鍵並移動滑鼠來捲動，放開即停止"
+          }
+        }
+      }
+    },
+    "auto-scroll.release-duration" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Release Duration:"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "慣性時長："
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "惯性时长："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "慣性時長："
+          }
+        }
+      }
+    },
+    "auto-scroll.reverse-horizontal" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reverse Horizontal"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反轉水平方向"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反转水平方向"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反轉水平方向"
+          }
+        }
+      }
+    },
+    "auto-scroll.reverse-vertical" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reverse Vertical"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反轉垂直方向"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反转垂直方向"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反轉垂直方向"
+          }
+        }
+      }
+    },
+    "auto-scroll.scroll-direction" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll Direction:"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捲動方向："
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滚动方向："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捲動方向："
+          }
+        }
+      }
+    },
+    "auto-scroll.smart" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Auto Scroll"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "智慧自動捲動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "智能自动滚动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "智慧自動捲動"
+          }
+        }
+      }
+    },
+    "auto-scroll.smart.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clicking outside of scrollable areas does a normal middle click"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在不可捲動的區域按一下時，執行普通的中鍵按一下"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在不可滚动的区域单击时，执行普通的中键单击"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在不可捲動的區域按一下時，執行普通的中鍵按一下"
+          }
+        }
+      }
+    },
+    "auto-scroll.super-slowdown" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Super Slowdown:"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "超級減速："
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "超级减速："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "超級減速："
+          }
+        }
+      }
+    },
+    "auto-scroll.super-slowdown.hint" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll extra slowly close to where you clicked, for precise scrolling. 0 turns it off"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在點擊位置附近額外減慢捲動，方便精細捲動。0 為關閉"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在点击位置附近额外减慢滚动，方便精细滚动。0 为关闭"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在點擊位置附近額外減慢捲動，方便精細捲動。0 為關閉"
+          }
+        }
+      }
+    },
+    "auto-scroll.tab" : {
+      "comment" : "'Auto Scroll' tab (Windows-style middle-button Auto Scroll).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto Scroll"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動捲動"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动滚动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動捲動"
+          }
+        }
+      }
+    },
     "beta-alert.back" : {
       "comment" : "",
       "extractionState" : "stale",

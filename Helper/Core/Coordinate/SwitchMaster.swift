@@ -186,6 +186,7 @@ import ReactiveSwift
         toggleScrollTap()
         toggleButtonTap()
         togglePointingTap(modifications: nil)
+        toggleAutoScrollTap()
         
         toggleKillSwitchMenuItems()
         
@@ -223,6 +224,7 @@ import ReactiveSwift
             toggleScrollTap()
             toggleButtonTap()
             togglePointingTap(modifications: nil)
+            toggleAutoScrollTap()
             
             /// Debug
             logWithState("""
@@ -265,6 +267,7 @@ import ReactiveSwift
             toggleScrollTap()
             toggleButtonTap()
             togglePointingTap(modifications: nil)
+            toggleAutoScrollTap()
             
             /// Debug
             logWithState("""
@@ -561,6 +564,13 @@ import ReactiveSwift
         } else {
             ButtonInputReceiver.stop()
         }
+    }
+    
+    private func toggleAutoScrollTap() {
+        
+        /// AutoScroll reads its own config and has its own taps. SwitchMaster only decides whether it's allowed to run.
+        ///     It's a button feature, so the button kill switch turns it off.
+        AutoScroll.shared.setAllowedBySwitchMaster(!isLockedDown && userIsActive && !buttonKillSwitch)
     }
     
     private func togglePointingTap(modifications modificationsArg: NSDictionary?) {

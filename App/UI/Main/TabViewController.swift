@@ -45,7 +45,7 @@ class TabViewController: NSTabViewController {
     
     // MARK: Constants
     ///     TODO: Think about using validTabs in different places / if using it at all makes sense in the grand architecture
-    private let validTabs = ["general", "buttons", "scrolling", "about"]
+    private let validTabs = ["general", "buttons", "scrolling", "autoscroll", "about"] /// "autoscroll" is added in `viewDidLoad()`
     
     private var window: ResizingTabWindow? {
         if let w = self.tabView.window as? ResizingTabWindow {
@@ -345,6 +345,16 @@ class TabViewController: NSTabViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        /// Add the 'Auto Scroll' tab before 'About'. It's built in code (See `AutoScrollTabController`), the other tabs come from Main.storyboard.
+        let autoScrollItem = NSTabViewItem(viewController: AutoScrollTabController())
+        autoScrollItem.identifier = "autoscroll"
+        autoScrollItem.label = MFLocalizedString("auto-scroll.tab", comment: "")
+        if #available(macOS 11.0, *) {
+            autoScrollItem.image = NSImage(systemSymbolName: "arrow.up.and.down.and.arrow.left.and.right", accessibilityDescription: nil)
+        }
+        let aboutIndex = tabViewItems.firstIndex { ($0.identifier as? String) == "about" } ?? tabViewItems.count
+        insertTabViewItem(autoScrollItem, at: aboutIndex)
         /// Debug
         DDLogDebug("TBS tabview didLoad")
     }

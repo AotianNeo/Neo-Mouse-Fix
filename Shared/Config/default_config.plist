@@ -52,6 +52,33 @@
 		<key>lockPointerDuringDrag</key>
 		<false/>
 	</dict>
+	<key>AutoScroll</key>
+	<dict>
+		<key>enabled</key>
+		<false/>
+		<key>button</key>
+		<integer>3</integer>
+		<key>actAsButtonOverLinks</key>
+		<true/>
+		<key>holdToActivate</key>
+		<true/>
+		<key>clickToToggle</key>
+		<true/>
+		<key>smartAutoScroll</key>
+		<false/>
+		<key>acceleration</key>
+		<real>10</real>
+		<key>superSlowdown</key>
+		<real>0</real>
+		<key>animateRelease</key>
+		<false/>
+		<key>releaseDuration</key>
+		<real>400</real>
+		<key>reverseVertical</key>
+		<false/>
+		<key>reverseHorizontal</key>
+		<false/>
+	</dict>
 	<key>Pointer</key>
 	<dict>
 		<key>acceleration</key>

@@ -170,6 +170,7 @@ void commitConfig(void) {
 //    [Scroll decide];
     [PointerConfig reload];
     [GeneralConfig reload];
+    [AutoScroll reload];
     [MenuBarItem reload];
 
 #endif
