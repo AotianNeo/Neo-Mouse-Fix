@@ -11904,6 +11904,151 @@
         }
       }
     },
+    "pointer.speed" : {
+      "comment" : "Label of the pointer speed slider on the 'Pointer' tab. Named like the Windows setting.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pointer speed"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指標速度"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指针速度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指標速度"
+          }
+        }
+      }
+    },
+    "pointer.speed.hint" : {
+      "comment" : "Tooltip of the pointer speed slider on the 'Pointer' tab.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Like the pointer speed slider in the Windows mouse settings. 10 is the middle position."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "與 Windows 滑鼠設定中的指標速度滑桿相同。10 是中間位置。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与 Windows 鼠标设置中的指针速度滑块相同。10 是中间位置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "與 Windows 滑鼠設定中的指標速度滑桿相同。10 是中間位置。"
+          }
+        }
+      }
+    },
+    "pointer.tab" : {
+      "comment" : "'Pointer' tab (Windows pointer acceleration).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pointer"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指標"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指针"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指標"
+          }
+        }
+      }
+    },
+    "pointer.windows-acceleration" : {
+      "comment" : "Checkbox on the 'Pointer' tab. Named like the Windows setting 'Enhance pointer precision'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enhance pointer precision (Windows)"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增強指標的準確性（Windows）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提高指针精确度（Windows）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增強指標的準確性（Windows）"
+          }
+        }
+      }
+    },
+    "pointer.windows-acceleration.hint" : {
+      "comment" : "Hint below the 'Enhance pointer precision (Windows)' checkbox on the 'Pointer' tab.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moves the pointer like Windows 10 and 11. Only for mice – the trackpad keeps the macOS behavior. While this is on, the Tracking speed in System Settings doesn't affect mice."
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "讓指標的移動與 Windows 10 和 11 一致。僅對滑鼠生效，觸控式軌跡板保持 macOS 的行為。開啟後，系統設定中的「追蹤速度」對滑鼠不再起作用。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "让指针的移动与 Windows 10 和 11 一致。仅对鼠标生效，触控板保持 macOS 的行为。开启后，系统设置中的“跟踪速度”对鼠标不再起作用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "讓指標的移動與 Windows 10 和 11 一致。僅對滑鼠生效，觸控式軌跡板保持 macOS 的行為。開啟後，系統設定中的「追蹤速度」對滑鼠不再起作用。"
+          }
+        }
+      }
+    },
     "precise-scrolling-hint" : {
       "comment" : "The mention of keyboard modifiers is meant to draw attention to the keyboard modifers section of the UI which appears right below. (Search for: 'Scrolling > Keyboard Modifiers')",
       "localizations" : {

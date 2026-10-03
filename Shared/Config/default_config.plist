@@ -87,6 +87,10 @@
 		<integer>1</integer>
 		<key>useSystemAcceleration</key>
 		<false/>
+		<key>windowsAcceleration</key>
+		<false/>
+		<key>windowsSpeed</key>
+		<integer>10</integer>
 	</dict>
 	<key>Remaps</key>
 	<array/>

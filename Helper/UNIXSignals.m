@@ -10,6 +10,7 @@
 #import "UNIXSignals.h"
 #import <signal.h>
 #import "DeviceManager.h"
+#import "Mac_Mouse_Fix_Helper-Swift.h"
 
 @implementation UNIXSignals
 
@@ -181,6 +182,9 @@ static void termination_signal_handler(int the_signal) {
     ///         we might wanna - instead of trying to automaticallly deconfigure - make it apparent to MMF users when they are permanently changing the configuration [of their mouse hardware or the IOKit driver (IOKitDriver configuration is not really permanent though - only lasts until computer restart)]
     
     [DeviceManager deconfigureDevices];
+    
+    /// Give the mice back their macOS pointer acceleration
+    [WindowsPointerAcceleration.shared restoreAllDevices];
     
     ///
     /// Log

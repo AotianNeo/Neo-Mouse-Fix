@@ -171,6 +171,7 @@ void commitConfig(void) {
     [PointerConfig reload];
     [GeneralConfig reload];
     [AutoScroll reload];
+    [WindowsPointerAcceleration reload];
     [MenuBarItem reload];
 
 #endif

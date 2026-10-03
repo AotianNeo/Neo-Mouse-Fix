@@ -45,7 +45,7 @@ class TabViewController: NSTabViewController {
     
     // MARK: Constants
     ///     TODO: Think about using validTabs in different places / if using it at all makes sense in the grand architecture
-    private let validTabs = ["general", "buttons", "scrolling", "autoscroll", "about"] /// "autoscroll" is added in `viewDidLoad()`
+    private let validTabs = ["general", "buttons", "scrolling", "windowspointer", "autoscroll", "about"] /// "windowspointer" and "autoscroll" are added in `viewDidLoad()`
     
     private var window: ResizingTabWindow? {
         if let w = self.tabView.window as? ResizingTabWindow {
@@ -355,6 +355,15 @@ class TabViewController: NSTabViewController {
         }
         let aboutIndex = tabViewItems.firstIndex { ($0.identifier as? String) == "about" } ?? tabViewItems.count
         insertTabViewItem(autoScrollItem, at: aboutIndex)
+        
+        /// Add the 'Pointer' tab before 'Auto Scroll'. Also built in code (See `WindowsPointerTabController`). Not the same as the unfinished storyboard tab "pointer", which stays hidden.
+        let pointerItem = NSTabViewItem(viewController: WindowsPointerTabController())
+        pointerItem.identifier = "windowspointer"
+        pointerItem.label = MFLocalizedString("pointer.tab", comment: "")
+        if #available(macOS 11.0, *) {
+            pointerItem.image = NSImage(systemSymbolName: "cursorarrow.motionlines", accessibilityDescription: nil)
+        }
+        insertTabViewItem(pointerItem, at: aboutIndex)
         /// Debug
         DDLogDebug("TBS tabview didLoad")
     }

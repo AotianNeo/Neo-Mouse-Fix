@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		A5C05C1F5C807B6307385C66 /* AutoScroll.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C0470DCBA2812D48855D52 /* AutoScroll.swift */; };
 		A5C097DD2FAB0F783BB35DEC /* AutoScrollConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C07D1E2A7961F8297CC856 /* AutoScrollConfig.swift */; };
+		A5C19701DE98A6AEB683349C /* WindowsPointerBallistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C1C858A13C5382A0EC6D01 /* WindowsPointerBallistics.swift */; };
+		A5C179F25AACC7F1F6EB5493 /* WindowsPointerAcceleration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C16EF18ACBD1FA00975990 /* WindowsPointerAcceleration.swift */; };
+		A5C1BD5B4D87CE7F380088AC /* WindowsPointerTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C138F95FFB152AF2AB88EA /* WindowsPointerTabController.swift */; };
 		A5C0CCD9F1B6780FD41A9E7E /* AutoScrollIndicatorWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C08FA1F6B7AB214EEDB242 /* AutoScrollIndicatorWindowController.swift */; };
 		A5C0A7732F2B2E47EAADC696 /* AutoScrollAccessibilityActivationClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C0B6554324DA7BADF6B5CA /* AutoScrollAccessibilityActivationClassifier.swift */; };
 		A5C0408467CC5E7D9CF14C59 /* AccessibilityElementQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C072DB30FF682E369AABF4 /* AccessibilityElementQuery.swift */; };
@@ -616,6 +619,9 @@
 /* Begin PBXFileReference section */
 		A5C0470DCBA2812D48855D52 /* AutoScroll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoScroll.swift; sourceTree = "<group>"; };
 		A5C07D1E2A7961F8297CC856 /* AutoScrollConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoScrollConfig.swift; sourceTree = "<group>"; };
+		A5C1C858A13C5382A0EC6D01 /* WindowsPointerBallistics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowsPointerBallistics.swift; sourceTree = "<group>"; };
+		A5C16EF18ACBD1FA00975990 /* WindowsPointerAcceleration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowsPointerAcceleration.swift; sourceTree = "<group>"; };
+		A5C138F95FFB152AF2AB88EA /* WindowsPointerTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowsPointerTabController.swift; sourceTree = "<group>"; };
 		A5C08FA1F6B7AB214EEDB242 /* AutoScrollIndicatorWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoScrollIndicatorWindowController.swift; sourceTree = "<group>"; };
 		A5C0B6554324DA7BADF6B5CA /* AutoScrollAccessibilityActivationClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoScrollAccessibilityActivationClassifier.swift; sourceTree = "<group>"; };
 		A5C072DB30FF682E369AABF4 /* AccessibilityElementQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityElementQuery.swift; sourceTree = "<group>"; };
@@ -2826,6 +2832,15 @@
 				A5C02E77417C0646C5430416 /* LICENSE-LinearMouse.txt */,
 			);
 			path = AutoScroll;
+			sourceTree = "<group>";
+		};
+		A5C1B71D1199E5222DCA61B1 /* PointerAcceleration */ = {
+			isa = PBXGroup;
+			children = (
+				A5C16EF18ACBD1FA00975990 /* WindowsPointerAcceleration.swift */,
+				A5C1C858A13C5382A0EC6D01 /* WindowsPointerBallistics.swift */,
+			);
+			path = PointerAcceleration;
 			sourceTree = "<group>";
 		};
 		4F09284128B8C71000BDC2FF /* UI */ = {
@@ -6998,6 +7013,7 @@
 				4F6F67A128A8188000C6C40F /* ButtonTab */,
 				4F909CF728A0C3D2009349A2 /* ScrollTabController.swift */,
 				A5C0E6A481168571BDF38996 /* AutoScrollTabController.swift */,
+				A5C138F95FFB152AF2AB88EA /* WindowsPointerTabController.swift */,
 				4F909CF828A0C3D2009349A2 /* PointerTabController.swift */,
 				4F7D97A528AEB2EE00C11E79 /* AboutTabController.swift */,
 				4F0D906B2E89731C005859A0 /* TabControllerUtility.swift */,
@@ -7885,6 +7901,7 @@
 				4FFBC5B126697E8D001D389B /* Smoothing */,
 				4FF6664725F2C93A00689B77 /* PointerSpeed */,
 				A5C05963323772014E7CB7AC /* AutoScroll */,
+				A5C1B71D1199E5222DCA61B1 /* PointerAcceleration */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -8727,6 +8744,7 @@
 				4FF665EE25F2C92700689B77 /* OverridePanel.m in Sources */,
 				4F909D2228A0C3D2009349A2 /* ScrollTabController.swift in Sources */,
 				A5C07B13F3405B5C019E0347 /* AutoScrollTabController.swift in Sources */,
+				A5C1BD5B4D87CE7F380088AC /* WindowsPointerTabController.swift in Sources */,
 				4F6F67A028A8141800C6C40F /* ButtonTabController.swift in Sources */,
 				4FF6654E25F2C7B000689B77 /* SharedUtility.m in Sources */,
 				4F428CE72CD3D608006322AB /* MacAddress.m in Sources */,
@@ -8882,6 +8900,8 @@
 			files = (
 				A5C05C1F5C807B6307385C66 /* AutoScroll.swift in Sources */,
 				A5C097DD2FAB0F783BB35DEC /* AutoScrollConfig.swift in Sources */,
+				A5C19701DE98A6AEB683349C /* WindowsPointerBallistics.swift in Sources */,
+				A5C179F25AACC7F1F6EB5493 /* WindowsPointerAcceleration.swift in Sources */,
 				A5C0CCD9F1B6780FD41A9E7E /* AutoScrollIndicatorWindowController.swift in Sources */,
 				A5C0A7732F2B2E47EAADC696 /* AutoScrollAccessibilityActivationClassifier.swift in Sources */,
 				A5C0408467CC5E7D9CF14C59 /* AccessibilityElementQuery.swift in Sources */,

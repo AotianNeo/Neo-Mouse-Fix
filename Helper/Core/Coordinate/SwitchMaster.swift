@@ -187,6 +187,7 @@ import ReactiveSwift
         toggleButtonTap()
         togglePointingTap(modifications: nil)
         toggleAutoScrollTap()
+        toggleWindowsPointerAcceleration()
         
         toggleKillSwitchMenuItems()
         
@@ -225,6 +226,7 @@ import ReactiveSwift
             toggleButtonTap()
             togglePointingTap(modifications: nil)
             toggleAutoScrollTap()
+            toggleWindowsPointerAcceleration()
             
             /// Debug
             logWithState("""
@@ -268,6 +270,7 @@ import ReactiveSwift
             toggleButtonTap()
             togglePointingTap(modifications: nil)
             toggleAutoScrollTap()
+            toggleWindowsPointerAcceleration()
             
             /// Debug
             logWithState("""
@@ -305,6 +308,8 @@ import ReactiveSwift
         self.toggleScrollTap()
         self.toggleButtonTap()
         self.togglePointingTap(modifications: nil)
+        WindowsPointerAcceleration.shared.attachedDevicesChanged()
+        self.toggleWindowsPointerAcceleration()
         
         toggleKillSwitchMenuItems()
         
@@ -571,6 +576,13 @@ import ReactiveSwift
         /// AutoScroll reads its own config and has its own taps. SwitchMaster only decides whether it's allowed to run.
         ///     It's a button feature, so the button kill switch turns it off.
         AutoScroll.shared.setAllowedBySwitchMaster(!isLockedDown && userIsActive && !buttonKillSwitch)
+    }
+    
+    private func toggleWindowsPointerAcceleration() {
+        
+        /// WindowsPointerAcceleration reads its own config and configures the mice itself. SwitchMaster only decides whether it's allowed.
+        ///     The HID services are shared by all users, so it restores the mice while another user is active.
+        WindowsPointerAcceleration.shared.setAllowedBySwitchMaster(!isLockedDown && userIsActive)
     }
     
     private func togglePointingTap(modifications modificationsArg: NSDictionary?) {
