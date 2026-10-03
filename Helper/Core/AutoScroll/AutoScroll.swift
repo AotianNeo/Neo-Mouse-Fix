@@ -338,7 +338,6 @@ import Cocoa
             guard isTriggerDrag else { return passThrough }
 
             pending.current = point
-            pending.bufferedEvents.append(event.copy() ?? event)
             state = .pending(pending)
 
             /// Left the dead zone -> Start Auto Scroll. The held-back click is dropped.
@@ -348,7 +347,10 @@ import Cocoa
                 return handlePointerMoved(event, isTriggerDrag: isTriggerDrag)
             }
 
-            return nil
+            /// The app hasn't seen the button-down yet, so turn the drag into a plain mouse move.
+            ///     (Dropping it would freeze the pointer – events dropped at the HID level don't move the cursor.)
+            event.type = .mouseMoved
+            return passThrough
 
         case let .active(anchor, _, session):
 
@@ -359,9 +361,11 @@ import Cocoa
             state = .active(anchor: anchor, current: point, session: newSession)
             indicatorController.update(delta: Self.indicatorDelta(from: anchor, to: point))
 
-            /// The app never saw the button-down, so it shouldn't see the drags either
+            /// The app never saw the button-down, so it shouldn't see a drag either. Turn it into a plain mouse move, so the pointer keeps moving freely, like on Windows.
+            ///     (Dropping it would freeze the pointer – events dropped at the HID level don't move the cursor.)
             if isTriggerDrag && suppressTriggerUp {
-                return nil
+                event.type = .mouseMoved
+                return passThrough
             }
 
             return passThrough
@@ -408,12 +412,14 @@ import Cocoa
 
         state = .idle
         let replayedDown = pending.bufferedEvents[0]
-        lastReplay = (CACurrentMediaTime(), pending.anchor, replayedDown.getIntegerValueField(.eventSourceUnixProcessID), replayedDown.timestamp)
+        lastReplay = (CACurrentMediaTime(), pending.current, replayedDown.getIntegerValueField(.eventSourceUnixProcessID), replayedDown.timestamp)
 
         var events = pending.bufferedEvents
         if let finalEvent {
             events.append(finalEvent.copy() ?? finalEvent)
         }
+        /// Replay where the pointer is now. The pointer kept moving while we held the click back, and posting at the old location would make it jump back.
+        events[0].location = pending.current
         for event in events {
             event.setIntegerValueField(.eventSourceUserData, value: Self.eventMarker)
             event.post(tap: .cghidEventTap)
