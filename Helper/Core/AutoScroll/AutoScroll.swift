@@ -379,6 +379,11 @@ import Cocoa
         guard config.actAsButtonOverLinks || config.smartAutoScroll else { return false }
         guard AXIsProcessTrusted() else { return false }
 
+        /// Always start Auto Scroll in the Dock (e.g. in a stack). Middle clicks don't do anything there, and stack items would count as buttons, and stacks don't expose a scroll area to Smart Auto Scroll.
+        if let owner = Self.accessibilityOwner(at: point), owner == Self.dockPid {
+            return false
+        }
+
         /// Use the event location instead of re-sampling the cursor, so the hit-test is anchored to the click we're classifying.
         let hit = accessibilityActivationClassifier.classify(at: point).resolved.hit
 
@@ -514,7 +519,31 @@ import Cocoa
               let bounds = CGRect(dictionaryRepresentation: boundsDict) else {
             return nil
         }
+
+        /// Only deliver straight to windows of regular apps whose UI is actually at the anchor. Otherwise post to the event stream, which scrolls the view under the pointer.
+        ///     E.g. Dock stacks are drawn by the Dock (an agent app) in an overlay that `windowNumber(at:)` looks through, and the Dock doesn't handle events posted to its process.
+        guard NSRunningApplication(processIdentifier: pid)?.activationPolicy == .regular,
+              accessibilityOwner(at: anchor).map({ $0 == pid }) ?? true else {
+            return nil
+        }
+
         return ScrollTarget(windowNumber: windowNumber, pid: pid, anchor: anchor, locationInWindow: CGPoint(x: anchor.x - bounds.minX, y: anchor.y - bounds.minY))
+    }
+
+    /// The process that owns the UI element at `point`, according to Accessibility. (One IPC call, bounded by the AX messaging timeout.)
+    private static func accessibilityOwner(at point: CGPoint) -> pid_t? {
+        var element: AXUIElement?
+        guard AXIsProcessTrusted(),
+              AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &element) == .success,
+              let element else {
+            return nil
+        }
+        var pid: pid_t = 0
+        return AXUIElementGetPid(element, &pid) == .success ? pid : nil
+    }
+
+    private static var dockPid: pid_t? {
+        return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first?.processIdentifier
     }
 
     /// Private CGEvent field that becomes `NSEvent.windowNumber`
