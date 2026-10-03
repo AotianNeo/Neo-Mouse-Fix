@@ -78,6 +78,7 @@ import Cocoa
     private var timer: DispatchSourceTimer?
     private var lastVelocity = CGVector.zero
     private var subPixelRemainder = CGVector.zero
+    private var scrollTarget: ScrollTarget? /// Kept until the release animation is done
     private var releaseAnimation: ReleaseAnimation?
 
     private lazy var indicatorController = AutoScrollIndicatorWindowController()
@@ -436,6 +437,7 @@ import Cocoa
         state = .active(anchor: anchor, current: current, session: session)
         lastVelocity = .zero
         subPixelRemainder = .zero
+        scrollTarget = Self.scrollTarget(at: anchor) /// Before showing the indicator
 
         indicatorController.show(at: Self.cocoaPoint(anchor))
         indicatorController.update(delta: Self.indicatorDelta(from: anchor, to: current))
@@ -488,7 +490,42 @@ import Cocoa
         timer?.cancel()
         timer = nil
         subPixelRemainder = .zero
+        scrollTarget = nil
     }
+
+    // MARK: Scroll target
+
+    private struct ScrollTarget {
+        var windowNumber: Int
+        var pid: pid_t
+        var anchor: CGPoint             /// Global CG coordinates
+        var locationInWindow: CGPoint   /// Anchor relative to the window's top-left corner
+    }
+
+    private static func scrollTarget(at anchor: CGPoint) -> ScrollTarget? {
+
+        /// The window that a click at the anchor would hit. (Skips click-through windows like the anchor indicator.)
+        let windowNumber = NSWindow.windowNumber(at: cocoaPoint(anchor), belowWindowWithWindowNumber: 0)
+        guard windowNumber > 0,
+              let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, CGWindowID(windowNumber)) as? [[String: Any]])?.first,
+              let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+              pid != getpid(),
+              let boundsDict = info[kCGWindowBounds as String] as! CFDictionary?,
+              let bounds = CGRect(dictionaryRepresentation: boundsDict) else {
+            return nil
+        }
+        return ScrollTarget(windowNumber: windowNumber, pid: pid, anchor: anchor, locationInWindow: CGPoint(x: anchor.x - bounds.minX, y: anchor.y - bounds.minY))
+    }
+
+    /// Private CGEvent field that becomes `NSEvent.windowNumber`
+    private static let windowNumberField = CGEventField(rawValue: 51)!
+
+    /// Private CoreGraphics function that sets the window-relative location (top-left origin) which becomes `NSEvent.locationInWindow`
+    ///     Looked up at runtime, so we fall back to normal routing if it ever goes away.
+    private static let setWindowLocation: (@convention(c) (CGEvent, CGPoint) -> Void)? = {
+        guard let symbol = dlsym(dlopen(nil, RTLD_NOW), "CGEventSetWindowLocation") else { return nil }
+        return unsafeBitCast(symbol, to: (@convention(c) (CGEvent, CGPoint) -> Void).self)
+    }()
 
     private func tick() {
 
@@ -561,10 +598,20 @@ import Cocoa
         guard let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: Int32(dy), wheel2: Int32(dx), wheel3: 0) else {
             return
         }
-        /// Note: Don't set `event.location` (e.g. to the anchor, to keep scrolling the view where Auto Scroll started). Posting an event with a location moves the cursor there, which would lock the pointer while Auto Scroll is active.
         event.flags = [] /// Held modifiers shouldn't turn this into zooming or horizontal scrolling
         event.setIntegerValueField(.eventSourceUserData, value: Self.eventMarker)
-        event.post(tap: .cgSessionEventTap)
+        
+        if let target = scrollTarget, let setWindowLocation = Self.setWindowLocation {
+            /// Send the event straight to the window where Auto Scroll started, so it keeps scrolling when the pointer moves over another window, like on Windows.
+            ///     AppKit routes events posted to a process by their window number and window location, not by the cursor position.
+            ///     Note: Posting into the event stream with `event.location` set instead would move the cursor there (-> the pointer would be stuck at the anchor).
+            event.location = target.anchor
+            event.setIntegerValueField(Self.windowNumberField, value: Int64(target.windowNumber))
+            setWindowLocation(event, target.locationInWindow)
+            event.postToPid(target.pid)
+        } else {
+            event.post(tap: .cgSessionEventTap) /// Goes to the view under the pointer
+        }
     }
 
     private func startReleaseAnimationIfNeeded() {
