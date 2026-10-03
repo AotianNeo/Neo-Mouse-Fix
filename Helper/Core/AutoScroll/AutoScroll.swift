@@ -78,7 +78,6 @@ import Cocoa
     private var timer: DispatchSourceTimer?
     private var lastVelocity = CGVector.zero
     private var subPixelRemainder = CGVector.zero
-    private var scrollTarget: CGPoint? /// Where the scroll events are sent. The anchor, kept until the release animation is done.
     private var releaseAnimation: ReleaseAnimation?
 
     private lazy var indicatorController = AutoScrollIndicatorWindowController()
@@ -437,7 +436,6 @@ import Cocoa
         state = .active(anchor: anchor, current: current, session: session)
         lastVelocity = .zero
         subPixelRemainder = .zero
-        scrollTarget = anchor
 
         indicatorController.show(at: Self.cocoaPoint(anchor))
         indicatorController.update(delta: Self.indicatorDelta(from: anchor, to: current))
@@ -490,7 +488,6 @@ import Cocoa
         timer?.cancel()
         timer = nil
         subPixelRemainder = .zero
-        scrollTarget = nil
     }
 
     private func tick() {
@@ -564,9 +561,7 @@ import Cocoa
         guard let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: Int32(dy), wheel2: Int32(dx), wheel3: 0) else {
             return
         }
-        if let scrollTarget {
-            event.location = scrollTarget /// Keep scrolling the view where Auto Scroll started (like on Windows), even when the pointer moves over another view or window
-        }
+        /// Note: Don't set `event.location` (e.g. to the anchor, to keep scrolling the view where Auto Scroll started). Posting an event with a location moves the cursor there, which would lock the pointer while Auto Scroll is active.
         event.flags = [] /// Held modifiers shouldn't turn this into zooming or horizontal scrolling
         event.setIntegerValueField(.eventSourceUserData, value: Self.eventMarker)
         event.post(tap: .cgSessionEventTap)
