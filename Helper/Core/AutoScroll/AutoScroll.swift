@@ -379,8 +379,8 @@ import Cocoa
         guard config.actAsButtonOverLinks || config.smartAutoScroll else { return false }
         guard AXIsProcessTrusted() else { return false }
 
-        /// Always start Auto Scroll in the Dock (e.g. in a stack). Middle clicks don't do anything there, and stack items would count as buttons, and stacks don't expose a scroll area to Smart Auto Scroll.
-        if let owner = Self.accessibilityOwner(at: point), owner == Self.dockPid {
+        /// Always start Auto Scroll in the Dock (e.g. in a stack). Middle clicks don't do anything there, and stack items count as buttons.
+        if let dockPid = Self.dockPid, Self.accessibilityElement(at: point)?.pid == dockPid {
             return false
         }
 
@@ -500,46 +500,47 @@ import Cocoa
 
     // MARK: Scroll target
 
-    private struct ScrollTarget {
-        var windowNumber: Int
-        var pid: pid_t
-        var anchor: CGPoint             /// Global CG coordinates
-        var locationInWindow: CGPoint   /// Anchor relative to the window's top-left corner
+    private enum ScrollTarget {
+        /// Post events straight to the window's process
+        case window(number: Int, pid: pid_t, anchor: CGPoint, locationInWindow: CGPoint) /// `anchor`: global CG coordinates, `locationInWindow`: relative to the window's top-left corner
+        /// Set the scroll bars of the scroll area at the anchor through Accessibility
+        case scrollBars(ScrollBarDriver)
     }
 
     private static func scrollTarget(at anchor: CGPoint) -> ScrollTarget? {
 
-        /// The window that a click at the anchor would hit. (Skips click-through windows like the anchor indicator.)
+        let hit = accessibilityElement(at: anchor)
+
+        /// Regular apps: The window that a click at the anchor would hit. (Skips click-through windows like the anchor indicator.)
         let windowNumber = NSWindow.windowNumber(at: cocoaPoint(anchor), belowWindowWithWindowNumber: 0)
-        guard windowNumber > 0,
-              let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, CGWindowID(windowNumber)) as? [[String: Any]])?.first,
-              let pid = info[kCGWindowOwnerPID as String] as? pid_t,
-              pid != getpid(),
-              let boundsDict = info[kCGWindowBounds as String] as! CFDictionary?,
-              let bounds = CGRect(dictionaryRepresentation: boundsDict) else {
-            return nil
+        if windowNumber > 0,
+           let info = (CGWindowListCopyWindowInfo(.optionIncludingWindow, CGWindowID(windowNumber)) as? [[String: Any]])?.first,
+           let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+           pid != getpid(),
+           NSRunningApplication(processIdentifier: pid)?.activationPolicy == .regular,
+           hit.map({ $0.pid == pid }) ?? true, /// The window's UI is actually at the anchor
+           let boundsDict = info[kCGWindowBounds as String] as! CFDictionary?,
+           let bounds = CGRect(dictionaryRepresentation: boundsDict) {
+            return .window(number: windowNumber, pid: pid, anchor: anchor, locationInWindow: CGPoint(x: anchor.x - bounds.minX, y: anchor.y - bounds.minY))
         }
 
-        /// Only deliver straight to windows of regular apps whose UI is actually at the anchor. Otherwise post to the event stream, which scrolls the view under the pointer.
-        ///     E.g. Dock stacks are drawn by the Dock (an agent app) in an overlay that `windowNumber(at:)` looks through, and the Dock doesn't handle events posted to its process.
-        guard NSRunningApplication(processIdentifier: pid)?.activationPolicy == .regular,
-              accessibilityOwner(at: anchor).map({ $0 == pid }) ?? true else {
-            return nil
+        /// Other UI, e.g. Dock stacks: They're drawn by the Dock (an agent app) in an overlay that `windowNumber(at:)` looks through, and the Dock ignores events posted to its process.
+        ///     Setting the scroll bars still keeps scrolling the stack when the pointer leaves it.
+        if let hit, hit.pid != getpid(), let driver = ScrollBarDriver(scrollAreaAround: hit.element) {
+            return .scrollBars(driver)
         }
 
-        return ScrollTarget(windowNumber: windowNumber, pid: pid, anchor: anchor, locationInWindow: CGPoint(x: anchor.x - bounds.minX, y: anchor.y - bounds.minY))
+        return nil /// Post to the event stream, which scrolls the view under the pointer
     }
 
-    /// The process that owns the UI element at `point`, according to Accessibility. (One IPC call, bounded by the AX messaging timeout.)
-    private static func accessibilityOwner(at point: CGPoint) -> pid_t? {
-        var element: AXUIElement?
+    /// The UI element at `point` and the process that owns it, according to Accessibility. (One IPC call, bounded by the AX messaging timeout.)
+    private static func accessibilityElement(at point: CGPoint) -> (element: AXUIElement, pid: pid_t)? {
         guard AXIsProcessTrusted(),
-              AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &element) == .success,
-              let element else {
+              case let .success(element?) = AccessibilityElementQuery().systemWideElement(at: point) else {
             return nil
         }
         var pid: pid_t = 0
-        return AXUIElementGetPid(element, &pid) == .success ? pid : nil
+        return AXUIElementGetPid(element, &pid) == .success ? (element, pid) : nil
     }
 
     private static var dockPid: pid_t? {
@@ -624,20 +625,25 @@ import Cocoa
 
         guard dx != 0 || dy != 0 else { return }
 
+        if case let .scrollBars(driver)? = scrollTarget {
+            driver.scroll(dx: dx, dy: dy)
+            return
+        }
+
         guard let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: Int32(dy), wheel2: Int32(dx), wheel3: 0) else {
             return
         }
         event.flags = [] /// Held modifiers shouldn't turn this into zooming or horizontal scrolling
         event.setIntegerValueField(.eventSourceUserData, value: Self.eventMarker)
         
-        if let target = scrollTarget, let setWindowLocation = Self.setWindowLocation {
+        if case let .window(windowNumber, pid, anchor, locationInWindow)? = scrollTarget, let setWindowLocation = Self.setWindowLocation {
             /// Send the event straight to the window where Auto Scroll started, so it keeps scrolling when the pointer moves over another window, like on Windows.
             ///     AppKit routes events posted to a process by their window number and window location, not by the cursor position.
             ///     Note: Posting into the event stream with `event.location` set instead would move the cursor there (-> the pointer would be stuck at the anchor).
-            event.location = target.anchor
-            event.setIntegerValueField(Self.windowNumberField, value: Int64(target.windowNumber))
-            setWindowLocation(event, target.locationInWindow)
-            event.postToPid(target.pid)
+            event.location = anchor
+            event.setIntegerValueField(Self.windowNumberField, value: Int64(windowNumber))
+            setWindowLocation(event, locationInWindow)
+            event.postToPid(pid)
         } else {
             event.post(tap: .cgSessionEventTap) /// Goes to the view under the pointer
         }
@@ -705,5 +711,89 @@ import Cocoa
     private static func cocoaPoint(_ point: CGPoint) -> CGPoint {
         /// Convert from global CG coordinates (origin top-left of the primary screen) to Cocoa coordinates (origin bottom-left of the primary screen)
         return SharedUtility.quartz(toCocoaScreenSpace_Point: point)
+    }
+}
+
+// MARK: - Scroll bar driver
+
+/// Scrolls a scroll area by setting its scroll bars' values through Accessibility.
+///     For UI that ignores events posted to its process, like Dock stacks. One AX call per tick (~0.4 ms for a Dock stack).
+private final class ScrollBarDriver {
+
+    private struct ScrollBar {
+        let element: AXUIElement
+        let scrollableLength: Double /// Content length minus visible length in px, derived from the thumb size
+        var value: Double            /// 0...1. Tracked here, so pixel steps add up exactly even if the app rounds the value it reports.
+    }
+
+    private var vertical: ScrollBar?
+    private var horizontal: ScrollBar?
+    private var isValid = true
+
+    private static let query = AccessibilityElementQuery()
+
+    init?(scrollAreaAround element: AXUIElement) {
+
+        /// Find the enclosing scroll area
+        var scrollArea: AXUIElement?
+        var current: AXUIElement? = element
+        for _ in 0..<12 {
+            guard let candidate = current else { break }
+            if Self.get(Self.query.optionalStringValue(of: kAXRoleAttribute as CFString, on: candidate)) == kAXScrollAreaRole {
+                scrollArea = candidate
+                break
+            }
+            current = Self.get(Self.query.optionalElementValue(of: kAXParentAttribute as CFString, on: candidate))
+        }
+        guard let scrollArea, let visible = Self.get(Self.query.optionalFrameValue(of: scrollArea)) else { return nil }
+
+        /// Look at the children, because not all scroll areas have the vertical / horizontal scroll bar attributes (Dock stacks don't)
+        for child in Self.get(Self.query.optionalElementArrayValue(of: kAXChildrenAttribute as CFString, on: scrollArea)) ?? []
+        where Self.get(Self.query.optionalStringValue(of: kAXRoleAttribute as CFString, on: child)) == kAXScrollBarRole {
+            switch Self.get(Self.query.optionalStringValue(of: kAXOrientationAttribute as CFString, on: child)) {
+            case kAXVerticalOrientationValue:   vertical = Self.scrollBar(child, visibleLength: visible.height, isVertical: true)
+            case kAXHorizontalOrientationValue: horizontal = Self.scrollBar(child, visibleLength: visible.width, isVertical: false)
+            default: break
+            }
+        }
+        guard vertical != nil || horizontal != nil else { return nil }
+    }
+
+    /// Scrolls by `dx` / `dy` px. Same sign convention as scroll wheel events: positive = towards the top / left.
+    func scroll(dx: Double, dy: Double) {
+        if dy != 0 { vertical = step(vertical, by: -dy) }
+        if dx != 0 { horizontal = step(horizontal, by: -dx) }
+    }
+
+    private func step(_ scrollBar: ScrollBar?, by pixels: Double) -> ScrollBar? {
+        guard isValid, var scrollBar else { return scrollBar }
+        let value = min(1, max(0, scrollBar.value + pixels / scrollBar.scrollableLength))
+        guard value != scrollBar.value else { return scrollBar } /// Already at the end
+        scrollBar.value = value
+        if AXUIElementSetAttributeValue(scrollBar.element, kAXValueAttribute as CFString, NSNumber(value: value)) == .invalidUIElement {
+            isValid = false /// E.g. the stack was closed
+        }
+        return scrollBar
+    }
+
+    private static func scrollBar(_ element: AXUIElement, visibleLength: Double, isVertical: Bool) -> ScrollBar? {
+        var isSettable: DarwinBoolean = false
+        guard AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &isSettable) == .success, isSettable.boolValue,
+              let value = (get(query.optionalAttributeValue(of: kAXValueAttribute as CFString, on: element)) as? NSNumber)?.doubleValue,
+              let track = get(query.optionalFrameValue(of: element)),
+              let thumbElement = (get(query.optionalElementArrayValue(of: kAXChildrenAttribute as CFString, on: element)) ?? []).first(where: {
+                  get(query.optionalStringValue(of: kAXRoleAttribute as CFString, on: $0)) == kAXValueIndicatorRole
+              }),
+              let thumb = get(query.optionalFrameValue(of: thumbElement)) else {
+            return nil
+        }
+        let thumbRatio = isVertical ? thumb.height / track.height : thumb.width / track.width
+        guard thumbRatio > 0, thumbRatio < 1 else { return nil } /// Nothing to scroll
+        return ScrollBar(element: element, scrollableLength: visibleLength * (1 / thumbRatio - 1), value: value)
+    }
+
+    private static func get<Value>(_ result: AccessibilityQueryResult<Value?>) -> Value? {
+        if case let .success(value) = result { return value }
+        return nil
     }
 }
