@@ -378,6 +378,7 @@
 		4FF6668325F2C93A00689B77 /* HelperAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FF6661025F2C93A00689B77 /* HelperAssets.xcassets */; };
 		4FF6668525F2C93A00689B77 /* Modifiers.m in Sources */ = {isa = PBXBuildFile; fileRef = 4FF6661725F2C93A00689B77 /* Modifiers.m */; };
 		4FF6668825F2C93A00689B77 /* ButtonInputReceiver.m in Sources */ = {isa = PBXBuildFile; fileRef = 4FF6661E25F2C93A00689B77 /* ButtonInputReceiver.m */; };
+		A5C204B664070AF4B5A997D8 /* AdaptiveScrollSpeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C255D933C1363B5464F108 /* AdaptiveScrollSpeed.swift */; };
 		4FF6668925F2C93A00689B77 /* Scroll.m in Sources */ = {isa = PBXBuildFile; fileRef = 4FF6662125F2C93A00689B77 /* Scroll.m */; };
 		4FF6668B25F2C93A00689B77 /* CubicUnitBezier.m in Sources */ = {isa = PBXBuildFile; fileRef = 4FF6662425F2C93A00689B77 /* CubicUnitBezier.m */; };
 		4FF6668F25F2C93A00689B77 /* SmoothScroll_old_.m in Sources */ = {isa = PBXBuildFile; fileRef = 4FF6662D25F2C93A00689B77 /* SmoothScroll_old_.m */; };
@@ -2656,6 +2657,7 @@
 		4FF6661D25F2C93A00689B77 /* ButtonTriggerHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ButtonTriggerHandler.h; sourceTree = "<group>"; };
 		4FF6661E25F2C93A00689B77 /* ButtonInputReceiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ButtonInputReceiver.m; sourceTree = "<group>"; };
 		4FF6662025F2C93A00689B77 /* SmoothScroll_old_.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SmoothScroll_old_.h; sourceTree = "<group>"; };
+		A5C255D933C1363B5464F108 /* AdaptiveScrollSpeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveScrollSpeed.swift; sourceTree = "<group>"; };
 		4FF6662125F2C93A00689B77 /* Scroll.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Scroll.m; sourceTree = "<group>"; };
 		4FF6662325F2C93A00689B77 /* SmoothScroll.m (old) */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SmoothScroll.m (old)"; sourceTree = "<group>"; };
 		4FF6662425F2C93A00689B77 /* CubicUnitBezier.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CubicUnitBezier.m; sourceTree = "<group>"; };
@@ -7938,6 +7940,7 @@
 			children = (
 				4FF6662C25F2C93A00689B77 /* Scroll.h */,
 				4FF6662125F2C93A00689B77 /* Scroll.m */,
+				A5C255D933C1363B5464F108 /* AdaptiveScrollSpeed.swift */,
 				4F7CFFF02E60F4B900ACEDEF /* Bug Log [Aug 2025] - Scroll Stopped Working.md */,
 				4FA994BC26678AC90007F003 /* ScrollAnalyzer.h */,
 				4FA994BD26678AC90007F003 /* ScrollAnalyzer.m */,
@@ -8982,6 +8985,7 @@
 				4FF6669F25F2C93A00689B77 /* main.m in Sources */,
 				4FFA4E4928B7D3750062A1FE /* NSView+Additions.m in Sources */,
 				4FF6668925F2C93A00689B77 /* Scroll.m in Sources */,
+				A5C204B664070AF4B5A997D8 /* AdaptiveScrollSpeed.swift in Sources */,
 				4FC55E31285E6F1F00F2FCCF /* GlobalDefaults.swift in Sources */,
 				4FF6669525F2C93A00689B77 /* ModifiedDrag.m in Sources */,
 				4F4C737D2C4FB06E001D97C3 /* NSString+Steganography.m in Sources */,
