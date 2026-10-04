@@ -57,6 +57,7 @@ static AXUIElementRef _systemWideAXUIElement; // TODO: should probably move this
 
 static MFScrollModificationResult _modifications;
 static ScrollConfig *_scrollConfig;
+static BOOL _pointerIsOverDockStack; /// Set at the start of each scroll
 static MFScrollAnimationCurveParameters *_animationParams;
 static ScrollAnalysisResult _lastScrollAnalysisResult;
 static CFTimeInterval _lastScrollAnalysisResultTimeStamp;
@@ -251,6 +252,55 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
 
 #pragma mark - Main event processing
 
+/// Dock stacks
+///     In stacks (grid view), the Dock shows big icons – rows are 128 pt tall – so scrolling crawls there: a tick of Windows-style scrolling at medium speed (30 pt) moves less than a quarter row. We scroll 3x as far over them (measured: 90 pt per tick, ~0.7 rows).
+///     Detection: We ask the Dock what's under the pointer. Only the Dock, so it's fast (~0.1 ms) – a system-wide Accessibility hit test asks the app under the pointer, which can take long. (`appUnderMousePointerWithEvent:` doesn't help: it looks through the Dock's stack overlay at the window behind it.)
+static double const kMFDockStackScrollMultiplier = 3.0;
+
+static BOOL pointerIsOverDockStack(CGPoint location) {
+    
+    static AXUIElementRef dock = NULL;
+    
+    for (int attempt = 0; attempt < 2; attempt++) {
+        
+        if (dock == NULL) {
+            NSRunningApplication *dockApp = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.apple.dock"].firstObject;
+            if (dockApp == nil) return NO;
+            dock = AXUIElementCreateApplication(dockApp.processIdentifier);
+            AXUIElementSetMessagingTimeout(dock, 0.05);
+        }
+        
+        AXUIElementRef element = NULL;
+        AXError error = AXUIElementCopyElementAtPosition(dock, location.x, location.y, &element);
+        if (error == kAXErrorInvalidUIElement || error == kAXErrorCannotComplete) { /// The Dock restarted -> Get the new process and try again
+            CFRelease(dock);
+            dock = NULL;
+            continue;
+        }
+        if (error != kAXErrorSuccess || element == NULL) {
+            return NO; /// No Dock UI under the pointer
+        }
+        
+        /// Stack content sits in a scroll area: AXImage > AXGrid > AXScrollArea > AXGroup > AXDockItem. The Dock itself has none.
+        BOOL result = NO;
+        for (int depth = 0; depth < 4 && element != NULL; depth++) {
+            CFTypeRef role = NULL;
+            if (AXUIElementCopyAttributeValue(element, kAXRoleAttribute, &role) == kAXErrorSuccess && role != NULL) {
+                result = CFEqual(role, kAXScrollAreaRole);
+                CFRelease(role);
+            }
+            if (result) break;
+            CFTypeRef parent = NULL;
+            AXUIElementCopyAttributeValue(element, kAXParentAttribute, &parent);
+            CFRelease(element);
+            element = (AXUIElementRef)parent;
+        }
+        if (element != NULL) CFRelease(element);
+        return result;
+    }
+    return NO;
+}
+
 static void heavyProcessing(CGEventRef event, int64_t scrollDeltaAxis1, int64_t scrollDeltaAxis2, CFTimeInterval tickTS) {
     
     /// Declare stuff for later
@@ -388,6 +438,9 @@ static void heavyProcessing(CGEventRef event, int64_t scrollDeltaAxis1, int64_t 
         /// Get scrollConfig
         _scrollConfig = [ScrollConfig scrollConfigWithModifiers:newMods inputAxis:inputAxis display:displayID];
         
+        /// Check for Dock stacks
+        _pointerIsOverDockStack = pointerIsOverDockStack(CGEventGetLocation(event));
+        
     } /// End `if (firstConsecutive) {`
     
     ///
@@ -522,6 +575,11 @@ static void heavyProcessing(CGEventRef event, int64_t scrollDeltaAxis1, int64_t 
     ///
     /// Send scroll events
     ///
+    
+    /// Scroll farther in Dock stacks
+    if (_pointerIsOverDockStack) {
+        pxToScrollForThisTick = llround(pxToScrollForThisTick * kMFDockStackScrollMultiplier);
+    }
     
     if (pxToScrollForThisTick == 0) {
         
