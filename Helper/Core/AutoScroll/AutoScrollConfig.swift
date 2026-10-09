@@ -18,7 +18,7 @@
 /// - `holdToActivate`        Press, drag, and release to Auto Scroll. Releasing the button stops scrolling.
 /// - `clickToToggle`         Click once to start Auto Scroll, click again (or click any button, or use the wheel) to stop. Combined with `holdToActivate`, this is the Windows behavior.
 /// - `smartAutoScroll`       Clicking outside of a scrollable area performs the normal click instead of starting Auto Scroll. (Dragging still starts Auto Scroll.)
-/// - `acceleration`          1...20. How quickly scrolling speeds up as you move away from the anchor point. 10 is LinearMouse's default speed.
+/// - `acceleration`          1...20. Scroll speed. 10 = Auto Scroll in Chrome and Edge on Windows (see `AutoScroll.scrollAmount(for:)`); the speed scales linearly with it.
 /// - `superSlowdown`         0...20. Size of an extra slow zone around the dead zone for precise, slow scrolling (× 10 px). 0 turns it off.
 /// - `animateRelease`        Keep gliding and slow down when Auto Scroll stops, instead of stopping instantly.
 /// - `releaseDuration`       0...3000. Length of the release animation in milliseconds.

@@ -1774,25 +1774,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acceleration:"
+            "value" : "Speed:"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "加速度："
+            "value" : "速度："
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "加速度："
+            "value" : "速度："
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "加速度："
+            "value" : "速度："
           }
         }
       }
@@ -1803,25 +1803,25 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How quickly scrolling speeds up as you move the mouse away from where you clicked"
+            "value" : "Scroll speed. 10 is the speed of Auto Scroll on Windows (Chrome, Edge)"
           }
         },
         "zh-HK" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "滑鼠離點擊位置越遠，捲動加速得越快的程度"
+            "value" : "捲動速度。10 與 Windows（Chrome、Edge）上的自動捲動速度相同"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "鼠标离点击位置越远，滚动加速得越快的程度"
+            "value" : "滚动速度。10 与 Windows（Chrome、Edge）上的自动滚动速度相同"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "滑鼠離點擊位置越遠，捲動加速得越快的程度"
+            "value" : "捲動速度。10 與 Windows（Chrome、Edge）上的自動捲動速度相同"
           }
         }
       }

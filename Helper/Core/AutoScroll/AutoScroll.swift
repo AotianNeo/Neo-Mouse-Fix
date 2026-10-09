@@ -28,8 +28,7 @@ import Cocoa
 
     // MARK: Constants
 
-    private static let deadZone: Double = 10
-    private static let maxScrollStep: Double = 160
+    private static let deadZone: Double = 15 /// Per axis, in points. Like Chromium (`kNoMiddleClickAutoscrollRadius`).
     private static let tickInterval: TimeInterval = 1.0 / 60.0
     private static let replayEchoWindow: CFTimeInterval = 0.5
     private static let eventMarker: Int64 = 0x4D4D_4641_5343 /// Written into `eventSourceUserData` of the events we post, so our own taps let them through.
@@ -621,23 +620,28 @@ import Cocoa
 
     private func scrollAmount(for delta: Double) -> Double {
 
-        /// Pixels per tick for a pointer offset of `delta` from the anchor. Positive delta -> positive scroll.
+        /// Points per tick for a pointer offset of `delta` (in points) from the anchor, on one axis. Positive delta -> positive scroll.
+        ///
+        /// Same curve as Auto Scroll in Chrome and Edge on Windows (Chromium):
+        ///     `AutoscrollController::HandleMouseMoveForMiddleClickAutoscroll()`: velocity = |distance|^2.2 * 0.000008 per axis (distance in DIPs, 0 within 15 of the start point)
+        ///     `FixedVelocityCurve::ComputeScrollOffset()`: offset = velocity * seconds * 5000
+        ///     -> 0.04 * |distance|^2.2 points per second, no cap. (E.g. 50 pt -> 217 pt/s, 100 pt -> 1005 pt/s, 300 pt -> 11200 pt/s)
+        /// `acceleration` scales it: 10 = Chromium.
 
-        let adjusted = abs(delta) - Self.deadZone
-        guard adjusted > 0 else { return 0 }
+        guard abs(delta) > Self.deadZone else { return 0 }
 
-        let speed = config.acceleration / 10
-        var value = adjusted * speed * 0.12 + sqrt(adjusted) * speed * 0.6
+        var pointsPerSecond = 0.04 * pow(abs(delta), 2.2) * (config.acceleration / 10)
 
-        /// Super Slowdown: Ramp up linearly inside an extra zone around the dead zone
+        /// Super Slowdown: Ramp up linearly inside an extra zone around the dead zone (off by default)
         if config.superSlowdown > 0 {
             let slowZone = config.superSlowdown * 10
+            let adjusted = abs(delta) - Self.deadZone
             if adjusted < slowZone {
-                value *= adjusted / slowZone
+                pointsPerSecond *= adjusted / slowZone
             }
         }
 
-        value = min(Self.maxScrollStep, value)
+        let value = pointsPerSecond * Self.tickInterval
         return delta < 0 ? -value : value
     }
 
