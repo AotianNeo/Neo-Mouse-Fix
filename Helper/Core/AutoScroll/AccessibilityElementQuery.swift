@@ -27,6 +27,7 @@ protocol AccessibilityElementQuerying {
     func optionalSizeValue(of attribute: CFString, on element: AXUIElement) -> AccessibilityQueryResult<CGSize?>
     func optionalFrameValue(of element: AXUIElement) -> AccessibilityQueryResult<CGRect?>
     func optionalActionNames(of element: AXUIElement) -> AccessibilityQueryResult<[String]>
+    func isAttributeSettable(_ attribute: CFString, on element: AXUIElement) -> AccessibilityQueryResult<Bool> /// [MMF]
 }
 
 struct AccessibilityElementQuery: AccessibilityElementQuerying {
@@ -205,6 +206,20 @@ struct AccessibilityElementQuery: AccessibilityElementQuerying {
         }
 
         return .success(CGRect(origin: position, size: size))
+    }
+
+    /// [MMF] E.g. whether an element can be focused (kAXFocusedAttribute)
+    func isAttributeSettable(_ attribute: CFString, on element: AXUIElement) -> AccessibilityQueryResult<Bool> {
+        var settable: DarwinBoolean = false
+        let error = AXUIElementIsAttributeSettable(element, attribute, &settable)
+        switch error {
+        case .success:
+            return .success(settable.boolValue)
+        case .noValue, .attributeUnsupported:
+            return .success(false)
+        default:
+            return .failure(error)
+        }
     }
 
     func optionalActionNames(of element: AXUIElement) -> AccessibilityQueryResult<[String]> {

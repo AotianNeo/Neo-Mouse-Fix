@@ -198,6 +198,19 @@ struct AutoScrollAccessibilityActivationClassifier {
                 return .certain(.pressable(path: path))
             }
 
+            /// [MMF] Clickable cards on web pages, e.g. posts on X: an article that the page made focusable (tabindex) so it can be opened.
+            ///     The page handles middle clicks on them itself (X opens the post in a new tab). Plain articles (e.g. blog posts) aren't focusable, so Auto Scroll still starts on them.
+            if subrole == "AXDocumentArticle" {
+                switch elementQuery.isAttributeSettable(kAXFocusedAttribute as CFString, on: element) {
+                case .success(true):
+                    return .certain(.pressable(path: path))
+                case .success(false):
+                    break
+                case let .failure(error):
+                    return Self.failedQueryResult(stage: "focusable", error: error, path: path)
+                }
+            }
+
             let domClassList = domClassList(of: element)
             hasBrowserAccessibilitySignal = hasBrowserAccessibilitySignal || !domClassList.isEmpty
             if matchingBypassRule(
