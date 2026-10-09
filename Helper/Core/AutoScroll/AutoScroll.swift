@@ -80,9 +80,6 @@ import Cocoa
     private var lastTickTime: CFTimeInterval? /// To scale each tick by the time that actually passed
     private var subPixelRemainder = CGVector.zero
     private var scrollTarget: ScrollTarget? /// Kept until the release animation is done
-    private var distanceMultiplier = 1.0 /// Bigger over icon grids (Finder icon view, Dock stacks), like scroll wheel scrolling. See `AdaptiveScrollSpeed`. Set shortly after activation.
-    private var activationCount = 0
-    private static let multiplierQueue = DispatchQueue(label: "com.nuebling.mac-mouse-fix.auto-scroll.multiplier", qos: .userInitiated)
     private var releaseAnimation: ReleaseAnimation?
 
     private lazy var indicatorController = AutoScrollIndicatorWindowController()
@@ -450,19 +447,6 @@ import Cocoa
         subPixelRemainder = .zero
         scrollTarget = Self.scrollTarget(at: anchor) /// Before showing the indicator
 
-        /// Scroll farther over icon grids
-        ///     Asked off the main thread: The first Accessibility query to an app can take ~50-90 ms, and our taps run on the main thread. Until the answer arrives (usually a few ms), we scroll at the normal speed.
-        distanceMultiplier = 1
-        activationCount += 1
-        let activation = activationCount
-        Self.multiplierQueue.async {
-            let multiplier = AdaptiveScrollSpeed.multiplier(at: anchor)
-            DispatchQueue.main.async {
-                if activation == self.activationCount {
-                    self.distanceMultiplier = multiplier
-                }
-            }
-        }
 
         indicatorController.show(at: Self.cocoaPoint(anchor))
         indicatorController.update(delta: Self.indicatorDelta(from: anchor, to: current))
@@ -610,8 +594,6 @@ import Cocoa
                                     dy: scrollAmount(for: anchor.y - current.y))
             if config.reverseHorizontal { velocity.dx = -velocity.dx }
             if config.reverseVertical { velocity.dy = -velocity.dy }
-            velocity.dx *= distanceMultiplier
-            velocity.dy *= distanceMultiplier
 
             lastVelocity = velocity
             postScroll(CGVector(dx: velocity.dx * tickScale, dy: velocity.dy * tickScale))
