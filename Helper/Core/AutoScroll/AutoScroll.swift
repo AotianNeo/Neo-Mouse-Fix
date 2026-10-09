@@ -77,8 +77,12 @@ import Cocoa
 
     private var timer: DispatchSourceTimer?
     private var lastVelocity = CGVector.zero
+    private var lastTickTime: CFTimeInterval? /// To scale each tick by the time that actually passed
     private var subPixelRemainder = CGVector.zero
     private var scrollTarget: ScrollTarget? /// Kept until the release animation is done
+    private var distanceMultiplier = 1.0 /// Bigger over icon grids (Finder icon view, Dock stacks), like scroll wheel scrolling. See `AdaptiveScrollSpeed`. Set shortly after activation.
+    private var activationCount = 0
+    private static let multiplierQueue = DispatchQueue(label: "com.nuebling.mac-mouse-fix.auto-scroll.multiplier", qos: .userInitiated)
     private var releaseAnimation: ReleaseAnimation?
 
     private lazy var indicatorController = AutoScrollIndicatorWindowController()
@@ -444,6 +448,20 @@ import Cocoa
         subPixelRemainder = .zero
         scrollTarget = Self.scrollTarget(at: anchor) /// Before showing the indicator
 
+        /// Scroll farther over icon grids
+        ///     Asked off the main thread: The first Accessibility query to an app can take ~50-90 ms, and our taps run on the main thread. Until the answer arrives (usually a few ms), we scroll at the normal speed.
+        distanceMultiplier = 1
+        activationCount += 1
+        let activation = activationCount
+        Self.multiplierQueue.async {
+            let multiplier = AdaptiveScrollSpeed.multiplier(at: anchor)
+            DispatchQueue.main.async {
+                if activation == self.activationCount {
+                    self.distanceMultiplier = multiplier
+                }
+            }
+        }
+
         indicatorController.show(at: Self.cocoaPoint(anchor))
         indicatorController.update(delta: Self.indicatorDelta(from: anchor, to: current))
 
@@ -489,11 +507,13 @@ import Cocoa
         }
         timer.resume()
         self.timer = timer
+        lastTickTime = nil
     }
 
     private func stopTimer() {
         timer?.cancel()
         timer = nil
+        lastTickTime = nil
         subPixelRemainder = .zero
         scrollTarget = nil
     }
@@ -559,6 +579,13 @@ import Cocoa
 
     private func tick() {
 
+        /// Scale by the time that actually passed since the last tick
+        ///     Velocities are per tick (1/60 s). The timer shares the main thread with our event taps, so ticks sometimes fire late – without this, every late tick would lose distance (measured: ~7 % slower than intended when scrolling a Dock stack fast).
+        ///     Capped, so a long stall doesn't make the content jump.
+        let now = CACurrentMediaTime()
+        let tickScale = lastTickTime.map { min(max((now - $0) / Self.tickInterval, 0), 3) } ?? 1
+        lastTickTime = now
+
         switch state {
         case let .active(anchor, current, _):
 
@@ -566,9 +593,11 @@ import Cocoa
                                     dy: scrollAmount(for: anchor.y - current.y))
             if config.reverseHorizontal { velocity.dx = -velocity.dx }
             if config.reverseVertical { velocity.dy = -velocity.dy }
+            velocity.dx *= distanceMultiplier
+            velocity.dy *= distanceMultiplier
 
             lastVelocity = velocity
-            postScroll(velocity)
+            postScroll(CGVector(dx: velocity.dx * tickScale, dy: velocity.dy * tickScale))
 
         case .idle:
 
@@ -584,7 +613,7 @@ import Cocoa
             }
 
             let factor = (1 - progress) * (1 - progress) /// Ease out
-            postScroll(CGVector(dx: releaseAnimation.velocity.dx * factor, dy: releaseAnimation.velocity.dy * factor))
+            postScroll(CGVector(dx: releaseAnimation.velocity.dx * factor * tickScale, dy: releaseAnimation.velocity.dy * factor * tickScale))
 
         case .pending:
             break

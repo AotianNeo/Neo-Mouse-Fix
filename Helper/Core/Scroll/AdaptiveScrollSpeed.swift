@@ -22,7 +22,8 @@
 /// - Only the app under the pointer is asked, with a short timeout. Apps that time out 3 times in a row are skipped for a minute.
 /// - Browsers and Electron apps are skipped: Accessibility queries can switch them into a slower accessibility mode, and web content has no icon grids anyway.
 ///
-/// Thread safety: Only call from the scroll queue (`Scroll.m` > `heavyProcessing()`).
+/// Used by scroll wheel scrolling (`Scroll.m`, at the start of each scroll) and by Auto Scroll (`AutoScroll.swift`, when it starts).
+///     Thread safe: Calls are serialized with a lock (they come from the scroll queue and from Auto Scroll's queue).
 
 import Cocoa
 
@@ -36,8 +37,13 @@ import Cocoa
     private static var skippedApps: [pid_t: Bool] = [:]       /// Browsers / Electron apps
     private static var timeouts: [pid_t: (count: Int, last: CFTimeInterval)] = [:] /// Consecutive timeouts per app. The first query to an app is often slow (50–85 ms measured for Finder), so we only skip apps that time out repeatedly.
 
+    private static let lock = NSLock()
+
     /// Multiplier for the scroll distance at `location` (global CG coordinates)
     @objc static func multiplier(at location: CGPoint) -> Double {
+
+        lock.lock()
+        defer { lock.unlock() }
 
         guard AXIsProcessTrusted() else { return 1 }
 
