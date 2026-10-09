@@ -383,7 +383,7 @@ import Cocoa
         ///     (Stack items count as buttons, so the rules below would click them instead. A middle click does nothing on them anyway.)
         ///     Everywhere else in the Dock – the Dock itself, a stack's header – it's a normal middle click.
         if let dockPid = Self.dockPid, let hit = Self.accessibilityElement(at: point), hit.pid == dockPid {
-            return !Self.isInScrollArea(hit.element)
+            return !Self.isScrollable(hit.element)
         }
 
         /// Use the event location instead of re-sampling the cursor, so the hit-test is anchored to the click we're classifying.
@@ -394,11 +394,11 @@ import Cocoa
         switch hit {
         case .pressable:
             return config.actAsButtonOverLinks
-        case let .nonPressable(diagnostic, path):
+        case let .nonPressable(diagnostic, _):
             /// If the AX query failed, we don't know whether the area is scrollable. Start Auto Scroll in that case.
             guard config.smartAutoScroll, diagnostic == nil else { return false }
-            let isScrollable = path.contains { $0.hasPrefix("AXScrollArea") || $0.hasPrefix("AXWebArea") }
-            return !isScrollable
+            guard let hit = Self.accessibilityElement(at: point) else { return false }
+            return !Self.isScrollable(hit.element)
         }
     }
 
@@ -548,17 +548,30 @@ import Cocoa
         return AXUIElementGetPid(element, &pid) == .success ? (element, pid) : nil
     }
 
-    /// Whether `element` is (inside) a scroll area. Stack items: AXImage > AXGrid > AXScrollArea > AXGroup > AXDockItem
-    private static func isInScrollArea(_ element: AXUIElement) -> Bool {
+    /// Whether `element` is in something that can scroll: web content, or a scroll area with a scroll bar.
+    ///     A scroll area alone isn't enough – e.g. the desktop is a scroll area (without scroll bars). macOS also removes the scroll bars when the content fits, so this means "there's something to scroll".
+    ///     Nested scroll areas: keep looking further out if an inner one can't scroll.
+    private static func isScrollable(_ element: AXUIElement) -> Bool {
+        func value(_ e: AXUIElement, _ attribute: String) -> CFTypeRef? {
+            var result: CFTypeRef?
+            return AXUIElementCopyAttributeValue(e, attribute as CFString, &result) == .success ? result : nil
+        }
         var current: AXUIElement? = element
-        for _ in 0..<6 {
-            guard let candidate = current else { return false }
-            var role: CFTypeRef?
-            if AXUIElementCopyAttributeValue(candidate, kAXRoleAttribute as CFString, &role) == .success, (role as? String) == kAXScrollAreaRole {
+        for _ in 0..<20 {
+            guard let candidate = current, let role = value(candidate, kAXRoleAttribute) as? String else { return false }
+            if role == "AXWebArea" {
                 return true
             }
-            var parent: CFTypeRef?
-            current = AXUIElementCopyAttributeValue(candidate, kAXParentAttribute as CFString, &parent) == .success ? (parent as! AXUIElement) : nil
+            if role == kAXScrollAreaRole {
+                if value(candidate, kAXVerticalScrollBarAttribute) != nil || value(candidate, kAXHorizontalScrollBarAttribute) != nil {
+                    return true
+                }
+                let children = (value(candidate, kAXChildrenAttribute) as? [AXUIElement]) ?? []
+                if children.contains(where: { (value($0, kAXRoleAttribute) as? String) == kAXScrollBarRole }) { /// The Dock's stacks only list it as a child
+                    return true
+                }
+            }
+            current = value(candidate, kAXParentAttribute).map { $0 as! AXUIElement }
         }
         return false
     }
