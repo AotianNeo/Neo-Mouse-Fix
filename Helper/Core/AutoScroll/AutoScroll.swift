@@ -383,9 +383,11 @@ import Cocoa
         guard config.actAsButtonOverLinks || config.smartAutoScroll else { return false }
         guard AXIsProcessTrusted() else { return false }
 
-        /// Always start Auto Scroll in the Dock (e.g. in a stack). Middle clicks don't do anything there, and stack items count as buttons.
-        if let dockPid = Self.dockPid, Self.accessibilityElement(at: point)?.pid == dockPid {
-            return false
+        /// The Dock: Only start Auto Scroll where there's something to scroll – in a stack, whose content sits in a scroll area.
+        ///     (Stack items count as buttons, so the rules below would click them instead. A middle click does nothing on them anyway.)
+        ///     Everywhere else in the Dock – the Dock itself, a stack's header – it's a normal middle click.
+        if let dockPid = Self.dockPid, let hit = Self.accessibilityElement(at: point), hit.pid == dockPid {
+            return !Self.isInScrollArea(hit.element)
         }
 
         /// Use the event location instead of re-sampling the cursor, so the hit-test is anchored to the click we're classifying.
@@ -561,6 +563,21 @@ import Cocoa
         }
         var pid: pid_t = 0
         return AXUIElementGetPid(element, &pid) == .success ? (element, pid) : nil
+    }
+
+    /// Whether `element` is (inside) a scroll area. Stack items: AXImage > AXGrid > AXScrollArea > AXGroup > AXDockItem
+    private static func isInScrollArea(_ element: AXUIElement) -> Bool {
+        var current: AXUIElement? = element
+        for _ in 0..<6 {
+            guard let candidate = current else { return false }
+            var role: CFTypeRef?
+            if AXUIElementCopyAttributeValue(candidate, kAXRoleAttribute as CFString, &role) == .success, (role as? String) == kAXScrollAreaRole {
+                return true
+            }
+            var parent: CFTypeRef?
+            current = AXUIElementCopyAttributeValue(candidate, kAXParentAttribute as CFString, &parent) == .success ? (parent as! AXUIElement) : nil
+        }
+        return false
     }
 
     private static var dockPid: pid_t? {
