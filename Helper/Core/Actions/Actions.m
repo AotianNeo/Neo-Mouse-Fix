@@ -9,7 +9,6 @@
 
 #import "Actions.h"
 #import "TouchSimulator.h"
-#import "GestureScrollSimulator.h"
 #import "SharedUtility.h"
 #import "ModificationUtility.h"
 #import "HelperUtility.h"
@@ -97,8 +96,6 @@
                         
                         /// Other
                         if (isbundle("dev.warp.Warp"))                  goto bfmethod_commandBracket;
-                        /// Telegram for macOS (TelegramSwift: the official `ru.keepcoder.Telegram` and self-built copies with other bundle IDs) – but not Telegram Desktop (`org.telegram.desktop`, a different app)
-                        if ([bundleID.lowercaseString containsString: @"telegram"] && !isbundle("org.telegram.desktop")) goto bfmethod_horizontalSwipe;
                         
                         /// Other Apple
                         ///     Note: None of the modern Catalyst/SwiftUI Apple apps support navigationSwipes. Perhaps `bfmethod_commandBracket` should be the 'default' for them instead of `bfmethod_navigationSwipe`.
@@ -137,29 +134,6 @@
                         bfmethod(bfmethod_commandLeftRightArrow) {
                             if (isleft)     postKeyboardShortcut(kVK_LeftArrow,  (CGSModifierFlags)kCGEventFlagMaskCommand);
                             else            postKeyboardShortcut(kVK_RightArrow, (CGSModifierFlags)kCGEventFlagMaskCommand);
-                        }
-                        bfmethod(bfmethod_horizontalSwipe) {
-                            /// A horizontal two-finger swipe on a trackpad: scroll events with phases (began -> changed -> ended).
-                            ///     For apps that navigate on this but ignore mouse buttons 4/5 and navigation swipe events. E.g. Telegram: its `Window` turns horizontal phased scrolling into swipe-back / -forward, and completes the navigation if the swipe covers more than 1/4 of the view's width (TGUIKit `Window.swift`, `SwipeDirection.withUpdatedSuccessOrFail()`). So we swipe a full screen width.
-                            ///     Direction: Like on a trackpad, 'back' moves the content to the right – with natural scrolling that's a positive delta. Telegram reads the natural scrolling setting (`com.apple.swipescrolldirection`, on if unset) to undo it, so we apply it the same way.
-                            ///     Paced like a real trackpad (an event every 8 ms, ~0.2 s in total), on a background queue. Posted all at once, AppKit coalesces the events, and Telegram only counts the distance of 'changed' events after the 'began' one – so the swipe came out as zero-length and was cancelled.
-                            NSNumber *naturalSetting = [NSUserDefaults.standardUserDefaults objectForKey: @"com.apple.swipescrolldirection"];
-                            BOOL natural = naturalSetting == nil ? YES : naturalSetting.boolValue;
-                            int64_t sign = (isleft ? 1 : -1) * (natural ? 1 : -1);
-                            int64_t step = 80;
-                            int64_t total = (int64_t)NSScreen.mainScreen.frame.size.width;
-                            static dispatch_queue_t swipeQueue = NULL;
-                            static dispatch_once_t onceToken;
-                            dispatch_once(&onceToken, ^{ swipeQueue = dispatch_queue_create("com.nuebling.mac-mouse-fix.horizontal-swipe", DISPATCH_QUEUE_SERIAL); });
-                            dispatch_async(swipeQueue, ^{
-                                [GestureScrollSimulator postGestureScrollEventWithDeltaX: sign * step deltaY: 0 phase: kIOHIDEventPhaseBegan autoMomentumScroll: NO invertedFromDevice: natural];
-                                for (int64_t moved = step; moved < total; moved += step) {
-                                    usleep(8000);
-                                    [GestureScrollSimulator postGestureScrollEventWithDeltaX: sign * step deltaY: 0 phase: kIOHIDEventPhaseChanged autoMomentumScroll: NO invertedFromDevice: natural];
-                                }
-                                usleep(8000);
-                                [GestureScrollSimulator postGestureScrollEventWithDeltaX: 0 deltaY: 0 phase: kIOHIDEventPhaseEnded autoMomentumScroll: NO invertedFromDevice: natural];
-                            });
                         }
                         bfmethod(bfmethod_optionCommandBracket) {
                             MFVKCAndFlags *shortcut  = MFEmulateNSMenuItemRemapping((isleft ? kVK_ANSI_LeftBracket : kVK_ANSI_RightBracket), (kCGEventFlagMaskAlternate|kCGEventFlagMaskCommand));
