@@ -96,6 +96,9 @@
                         
                         /// Other
                         if (isbundle("dev.warp.Warp"))                  goto bfmethod_commandBracket;
+                        /// Telegram for macOS (TelegramSwift: the official `ru.keepcoder.Telegram` and self-built copies with other bundle IDs) – but not Telegram Desktop (`org.telegram.desktop`, a different app)
+                        ///     Back is Escape. There's no Forward.
+                        if ([bundleID.lowercaseString containsString: @"telegram"] && !isbundle("org.telegram.desktop")) { if (isleft) goto bfmethod_escape; else goto bfmethod_mouseButton; }
                         
                         /// Other Apple
                         ///     Note: None of the modern Catalyst/SwiftUI Apple apps support navigationSwipes. Perhaps `bfmethod_commandBracket` should be the 'default' for them instead of `bfmethod_navigationSwipe`.
@@ -134,6 +137,20 @@
                         bfmethod(bfmethod_commandLeftRightArrow) {
                             if (isleft)     postKeyboardShortcut(kVK_LeftArrow,  (CGSModifierFlags)kCGEventFlagMaskCommand);
                             else            postKeyboardShortcut(kVK_RightArrow, (CGSModifierFlags)kCGEventFlagMaskCommand);
+                        }
+                        bfmethod(bfmethod_escape) {
+                            /// The Escape key. For apps that go back on Escape but ignore mouse buttons 4/5, navigation swipes and the usual shortcuts.
+                            ///     E.g. Telegram: Its navigation controller hands Escape to the current screen first (which may e.g. cancel a selection or a reply), and if that doesn't use it, goes back (TGUIKit `MajorNavigationController.escapeKeyAction()`). It has no AppleScript dictionary – a script could only send this key, too.
+                            ///     Key events go to the active app, but we chose the method for the app under the pointer. So if that's in the background, activate it first, so the key doesn't land in another app.
+                            NSRunningApplication *app = [HelperUtility appUnderMousePointerWithEvent: NULL];
+                            if (app == nil || app.active) {
+                                postKeyboardShortcut(kVK_Escape, 0);
+                            } else {
+                                [app activateWithOptions: 0];
+                                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                                    postKeyboardShortcut(kVK_Escape, 0);
+                                });
+                            }
                         }
                         bfmethod(bfmethod_optionCommandBracket) {
                             MFVKCAndFlags *shortcut  = MFEmulateNSMenuItemRemapping((isleft ? kVK_ANSI_LeftBracket : kVK_ANSI_RightBracket), (kCGEventFlagMaskAlternate|kCGEventFlagMaskCommand));
