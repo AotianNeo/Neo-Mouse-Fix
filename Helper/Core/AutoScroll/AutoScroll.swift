@@ -19,6 +19,7 @@
 /// - Clicks that we hold back (e.g. a middle click over a link) are re-posted at the HID level, so `ButtonInputReceiver` still sees them and middle-button remaps keep working.
 /// - Turned on / off by the `AutoScroll` config dict and by `SwitchMaster` (lockdown, fast user switching, button kill switch).
 /// - Adds options on top of LinearMouse's: Smart Auto Scroll, Super Slowdown, Animate Release, and reverse directions. See `AutoScrollConfig.swift`.
+/// - Leaves the button alone in virtual machines and remote desktops (`isVirtualMachine(_:)`), so the guest OS's apps do their own Auto Scroll.
 
 import Cocoa
 
@@ -274,6 +275,9 @@ import Cocoa
 
         /// Let modified clicks through
         if !event.flags.intersection(Self.passThroughModifiers).isEmpty { return passThrough }
+
+        /// Let clicks in virtual machines and remote desktops through
+        if Self.isVirtualMachine(HelperUtility.appUnderMousePointer(with: event)) { return passThrough }
 
         /// Hold only -> Wait for movement. If there is none, it's a normal click.
         if !config.clickToToggle {
@@ -574,6 +578,16 @@ import Cocoa
             current = value(candidate, kAXParentAttribute).map { $0 as! AXUIElement }
         }
         return false
+    }
+
+    /// Apps that show another computer's screen: virtual machines (e.g. Parallels Desktop) and remote desktop clients.
+    ///     We can't do Auto Scroll well in there – it only works in terms of the guest OS:
+    ///     - Our scroll events become wheel input in the guest, which goes to whatever is under the guest's cursor. So when the pointer moves away from where Auto Scroll started (which is how you control the speed), it scrolls other panes, windows or the taskbar instead. (On the Mac we post to the window where Auto Scroll started, but here that's the whole VM window.)
+    ///     - How far wheel input scrolls depends on the guest app. Measured in Parallels with Windows 11: 1 pt of scrolling -> 1/120 of a wheel notch. Chrome and Edge scroll ~0.83x as far, behind their wheel animation; classic Windows apps only move once a whole notch has built up (3 lines at a time).
+    ///     So we leave the button to the guest: Apps there that have Auto Scroll (e.g. Chrome, Edge, Firefox, Office on Windows) do it themselves – exactly like on that OS.
+    private static func isVirtualMachine(_ app: NSRunningApplication?) -> Bool {
+        guard let bundleID = app?.bundleIdentifier else { return false }
+        return ["com.parallels.", "com.vmware.fusion", "com.utmapp.UTM", "org.virtualbox.app.VirtualBoxVM", "com.microsoft.rdc.macos"].contains { bundleID.hasPrefix($0) }
     }
 
     private static var dockPid: pid_t? {
