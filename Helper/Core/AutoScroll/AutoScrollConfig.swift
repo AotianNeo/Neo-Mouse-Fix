@@ -24,6 +24,7 @@
 /// - `releaseDuration`       0...3000. Length of the release animation in milliseconds.
 /// - `reverseVertical`       Flip the vertical scroll direction.
 /// - `reverseHorizontal`     Flip the horizontal scroll direction.
+/// - `vmAgent`               Optional. "host:port" of the Mac Mouse Fix VM agent in a virtual machine (`VMAgent/mmf-vm-agent.ps1`), e.g. "10.211.55.3:47001". Lets 'act as a button over links' see tabs, links and buttons inside the VM. Not in `default_config.plist` – set by hand.
 
 import Cocoa
 
@@ -41,6 +42,7 @@ struct AutoScrollConfig: Equatable {
     var releaseDuration = 400.0
     var reverseVertical = false
     var reverseHorizontal = false
+    var vmAgent: String? = nil
 
     /// Derived
 
@@ -80,6 +82,7 @@ struct AutoScrollConfig: Equatable {
         result.releaseDuration      = double("releaseDuration", result.releaseDuration, 0...3000)
         result.reverseVertical      = bool("reverseVertical", result.reverseVertical)
         result.reverseHorizontal    = bool("reverseHorizontal", result.reverseHorizontal)
+        result.vmAgent              = (dict["vmAgent"] as? String).flatMap { $0.isEmpty ? nil : $0 }
 
         return result
     }

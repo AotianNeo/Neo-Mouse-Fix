@@ -19,6 +19,7 @@
 /// - Clicks that we hold back (e.g. a middle click over a link) are re-posted at the HID level, so `ButtonInputReceiver` still sees them and middle-button remaps keep working.
 /// - Turned on / off by the `AutoScroll` config dict and by `SwitchMaster` (lockdown, fast user switching, button kill switch).
 /// - Adds options on top of LinearMouse's: Smart Auto Scroll, Super Slowdown, Animate Release, and reverse directions. See `AutoScrollConfig.swift`.
+/// - In virtual machines and remote desktops, Accessibility can't see what's under the pointer (`isVirtualMachine(_:)`). There we ask our VM agent in the guest instead (`GuestAgent`), or start Auto Scroll right away if there's none.
 
 import Cocoa
 
@@ -30,6 +31,7 @@ import Cocoa
 
     private static let deadZone: Double = 15 /// Per axis, in points. Like Chromium (`kNoMiddleClickAutoscrollRadius`).
     private static let tickInterval: TimeInterval = 1.0 / 60.0
+    private static let guestTimeout: TimeInterval = 0.3 /// For the VM agent's answer. It typically takes ~5 ms (Edge on Windows 11 in Parallels), the first query after a while ~100 ms.
     private static let replayEchoWindow: CFTimeInterval = 0.5
     private static let eventMarker: Int64 = 0x4D4D_4641_5343 /// Written into `eventSourceUserData` of the events we post, so our own taps let them through.
     private static let passThroughModifiers: CGEventFlags = [.maskCommand, .maskControl, .maskAlternate, .maskShift] /// Modified clicks (e.g. Command-middle-click) are never turned into Auto Scroll
@@ -47,6 +49,15 @@ import Cocoa
         var current: CGPoint
         var bufferedEvents: [CGEvent]
         var session: Session /// Session to start if the pointer leaves the dead zone before the button is released
+        var guest: GuestClick? = nil /// In virtual machines: what the guest says is under its cursor
+    }
+
+    /// A click in a virtual machine, while we ask the guest what's under its cursor (see `isVirtualMachine(_:)`)
+    private enum GuestClick {
+        case asking                 /// Waiting for the answer
+        case released(CGEvent)      /// The button went up before the answer came. (The button-up, to replay if it's a normal click.)
+        case normalClick            /// The answer: a click here is a normal click (a tab / link / button, or nothing scrollable – like on the Mac, see `shouldPreferNativeClick(at:)`)
+        case autoScroll             /// The answer: a click here starts Auto Scroll (something scrollable, or no answer)
     }
 
     private enum State {
@@ -80,6 +91,7 @@ import Cocoa
     private var subPixelRemainder = CGVector.zero
     private var scrollTarget: ScrollTarget? /// Kept until the release animation is done
     private var releaseAnimation: ReleaseAnimation?
+    private var guestQueryID = 0 /// To ignore answers to earlier clicks
 
     private lazy var indicatorController = AutoScrollIndicatorWindowController()
     private lazy var accessibilityActivationClassifier = AutoScrollAccessibilityActivationClassifier()
@@ -283,6 +295,19 @@ import Cocoa
 
         let session: Session = config.holdToActivate ? .pendingToggleOrHold : .toggle
 
+        /// Virtual machines -> Ask the guest what's under its cursor, and hold the click back until we know. Then it's like on the Mac: Over a tab / link / button, or outside of a scrollable area, a click is a normal click.
+        ///     Without our agent in the guest, start right away.
+        if Self.isVirtualMachine(HelperUtility.appUnderMousePointer(with: event)) {
+            if config.actAsButtonOverLinks || config.smartAutoScroll, let agent = config.vmAgent {
+                beginPendingActivation(with: event, session: session, guest: .asking)
+                askGuest(agent)
+            } else {
+                activate(anchor: point, current: point, session: session)
+                suppressTriggerUp = true
+            }
+            return nil
+        }
+
         /// Over a link / outside of a scrollable area -> Wait for movement. If there is none, it's a normal click.
         if shouldPreferNativeClick(at: point) {
             beginPendingActivation(with: event, session: session)
@@ -298,8 +323,17 @@ import Cocoa
     private func handleTriggerUp(_ event: CGEvent) -> Unmanaged<CGEvent>? {
 
         /// No movement while pending -> It was a normal click
-        if case .pending = state {
-            replayPendingActivation(including: event)
+        ///     In virtual machines, it depends on what the guest says is under its cursor.
+        if case var .pending(pending) = state {
+            switch pending.guest {
+            case .asking?:
+                pending.guest = .released(event.copy() ?? event) /// Decide when the answer comes (`guestAnswered(_:id:)`)
+                state = .pending(pending)
+            case .autoScroll?:
+                activate(anchor: pending.anchor, current: pending.current, session: .toggle)
+            default:
+                replayPendingActivation(including: event)
+            }
             return nil
         }
 
@@ -404,13 +438,53 @@ import Cocoa
 
     // MARK: Activation
 
-    private func beginPendingActivation(with event: CGEvent, session: Session) {
+    private func beginPendingActivation(with event: CGEvent, session: Session, guest: GuestClick? = nil) {
 
         stopReleaseAnimation()
 
         let point = event.location
-        state = .pending(PendingActivation(anchor: point, current: point, bufferedEvents: [event.copy() ?? event], session: session))
+        state = .pending(PendingActivation(anchor: point, current: point, bufferedEvents: [event.copy() ?? event], session: session, guest: guest))
         updateTrackingTap()
+    }
+
+    /// Asks our agent in the virtual machine what's under the guest's cursor
+    private func askGuest(_ agent: String) {
+        guestQueryID += 1
+        let id = guestQueryID
+        GuestAgent.hitUnderCursor(agent: agent, timeout: Self.guestTimeout) { [weak self] hit in
+            self?.guestAnswered(hit, id: id)
+        }
+    }
+
+    private func guestAnswered(_ hit: GuestAgent.Hit?, id: Int) {
+
+        /// Ignore answers that come too late – the click was decided by a drag, another click, ...
+        guard id == guestQueryID, case var .pending(pending) = state, let guest = pending.guest else { return }
+
+        /// Same rules as on the Mac (`shouldPreferNativeClick(at:)`)
+        let isNormalClick: Bool
+        switch hit {
+        case .pressable?:   isNormalClick = config.actAsButtonOverLinks
+        case .other?:       isNormalClick = config.smartAutoScroll
+        case .scrollable?:  isNormalClick = false
+        case .unknown?:     isNormalClick = false /// The guest can't tell (e.g. an Electron app's web content). Like without the agent: Auto Scroll.
+        case nil:           isNormalClick = false /// No answer – same
+        }
+        DDLogDebug("AutoScroll: Guest says \(hit.map { "\($0)" } ?? "nothing") -> \(isNormalClick ? "normal click" : "Auto Scroll")")
+
+        switch guest {
+        case .asking:
+            pending.guest = isNormalClick ? .normalClick : .autoScroll
+            state = .pending(pending)
+        case let .released(buttonUp):
+            if isNormalClick {
+                replayPendingActivation(including: buttonUp)
+            } else {
+                activate(anchor: pending.anchor, current: pending.current, session: .toggle)
+            }
+        case .normalClick, .autoScroll:
+            break
+        }
     }
 
     private func replayPendingActivation(including finalEvent: CGEvent? = nil) {
@@ -574,6 +648,14 @@ import Cocoa
             current = value(candidate, kAXParentAttribute).map { $0 as! AXUIElement }
         }
         return false
+    }
+
+    /// Apps that show another computer's screen: virtual machines (e.g. Parallels Desktop) and remote desktop clients.
+    ///     Accessibility can't see into them – to us, the guest's whole screen is a single window with nothing scrollable and no links. So Smart Auto Scroll and 'act as a button over links' would always hand a click to the guest (where only some apps have Auto Scroll of their own, e.g. browsers on Windows), and only a drag would start ours.
+    ///     Instead, we ask our agent in the guest (`GuestAgent`) what's under its cursor: a tab / link / button, something scrollable, or neither. Without it, a click starts Auto Scroll right away, like in Smooze Pro. (Holding a modifier key still makes it a normal click, see `passThroughModifiers`.)
+    private static func isVirtualMachine(_ app: NSRunningApplication?) -> Bool {
+        guard let bundleID = app?.bundleIdentifier else { return false }
+        return ["com.parallels.", "com.vmware.fusion", "com.utmapp.UTM", "org.virtualbox.app.VirtualBoxVM", "com.microsoft.rdc.macos"].contains { bundleID.hasPrefix($0) }
     }
 
     private static var dockPid: pid_t? {
@@ -840,5 +922,95 @@ private final class ScrollBarDriver {
     private static func get<Value>(_ result: AccessibilityQueryResult<Value?>) -> Value? {
         if case let .success(value) = result { return value }
         return nil
+    }
+}
+
+/// Client for the Mac Mouse Fix VM agent (`VMAgent/mmf-vm-agent.ps1`), which runs in a Windows virtual machine and answers what's under the guest's cursor, using UI Automation.
+///     Protocol: TCP, one line per query. We send "Q", it answers "P <type> ..." (pressable: tab, link, button, menu item), "S <type> ..." (in something scrollable), "U ..." (can't tell), "N ..." (neither) or "E ..." (error).
+///     The guest's cursor follows ours while the pointer is over the VM, so it's where the click is.
+private enum GuestAgent {
+
+    enum Hit {
+        case pressable  /// A tab, link, button or menu item
+        case scrollable /// Inside something that can scroll
+        case unknown    /// The guest can't see what's there (web content of apps that don't expose it, e.g. Electron apps)
+        case other      /// Neither (e.g. the desktop)
+    }
+
+    /// After the agent didn't answer, don't ask again for a while – so clicks don't each wait for the timeout while the VM or the agent isn't running. (Main thread only.)
+    private static var unreachableUntil = Date.distantPast
+    private static let retryInterval: TimeInterval = 30
+
+    /// Call on the main thread. Calls `completion` on the main thread, with nil if there's no answer (agent not running, timeout, error)
+    static func hitUnderCursor(agent: String, timeout: TimeInterval, completion: @escaping (Hit?) -> Void) {
+        guard Date() >= unreachableUntil else {
+            completion(nil)
+            return
+        }
+        DispatchQueue.global(qos: .userInteractive).async { /// Each query on its own, so a slow one doesn't hold up the next
+            let answer = query(agent: agent, deadline: Date().addingTimeInterval(timeout))
+            DispatchQueue.main.async {
+                if answer == nil { unreachableUntil = Date().addingTimeInterval(retryInterval) }
+                completion(answer)
+            }
+        }
+    }
+
+    /// Plain BSD sockets, so the whole exchange – connecting included – is bounded by `deadline`
+    private static func query(agent: String, deadline: Date) -> Hit? {
+
+        let parts = agent.split(separator: ":")
+        guard parts.count == 2, let port = UInt16(parts[1]) else { return nil }
+        var address = sockaddr_in()
+        address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = port.bigEndian
+        guard inet_pton(AF_INET, String(parts[0]), &address.sin_addr) == 1 else { return nil }
+
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return nil }
+        defer { close(fd) }
+        var on: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, socklen_t(MemoryLayout<Int32>.size))
+        _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK)
+
+        func wait(for events: Int32) -> Bool {
+            var request = pollfd(fd: fd, events: Int16(events), revents: 0)
+            return poll(&request, 1, Int32(max(0, deadline.timeIntervalSinceNow) * 1000)) == 1 && request.revents & Int16(events) != 0
+        }
+
+        /// Connect
+        let connected = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
+        }
+        if connected != 0 {
+            guard errno == EINPROGRESS, wait(for: POLLOUT) else { return nil }
+            var error: Int32 = 0
+            var length = socklen_t(MemoryLayout<Int32>.size)
+            guard getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &length) == 0, error == 0 else { return nil } /// E.g. connection refused – the agent isn't running
+        }
+
+        /// Ask
+        let question = Array("Q\n".utf8)
+        guard send(fd, question, question.count, 0) == question.count else { return nil }
+
+        /// Read one line
+        var received: [UInt8] = []
+        var buffer = [UInt8](repeating: 0, count: 512)
+        while !received.contains(UInt8(ascii: "\n")) {
+            guard wait(for: POLLIN) else { return nil }
+            let count = recv(fd, &buffer, buffer.count, 0)
+            guard count > 0 else { return nil }
+            received += buffer[0..<count]
+        }
+        let line = String(decoding: received.prefix { $0 != UInt8(ascii: "\n") }, as: UTF8.self)
+        switch line.prefix(2) {
+        case "P ": return .pressable
+        case "S ": return .scrollable
+        case "U ": return .unknown
+        case "N ": return .other
+        default:   return nil
+        }
     }
 }
