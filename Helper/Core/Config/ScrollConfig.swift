@@ -286,6 +286,13 @@ import Cocoa
         }
     }
     
+    // MARK: Wheel bounce filter
+    
+    /// `Scroll.wheelBounceFilter`: Ignore the stray ticks in the wrong direction that worn scroll wheels send. See WheelBounceFilter.swift
+    @objc lazy var wheelBounceFilter: Bool = {
+        return (c("wheelBounceFilter") as? Bool) ?? false
+    }()
+    
     // MARK: Invert Direction
     
     @objc lazy var u_invertDirection: MFScrollInversion = {

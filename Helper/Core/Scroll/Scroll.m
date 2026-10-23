@@ -72,6 +72,8 @@ static CFTimeInterval _lastScrollAnalysisResultTimeStamp;
     dispatch_queue_attr_t attr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INTERACTIVE, -1);
     _scrollQueue = dispatch_queue_create("com.nuebling.mac-mouse-fix.helper.scroll", attr);
     
+    WheelBounceFilter.queue = _scrollQueue;
+    
     /// Create AXUIElement for getting app under mouse pointer
     _systemWideAXUIElement = AXUIElementCreateSystemWide();
     /// Create Event source
@@ -243,8 +245,18 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
     /// Enqueue heavy processing
     ///  Executing heavy stuff on a different thread to prevent the eventTap from timing out. We wrote this before knowing that you can just re-enable the eventTap when it times out. But this doesn't hurt.
     
+    BOOL filterBounce = ScrollConfig.shared.wheelBounceFilter;
     dispatch_async(_scrollQueue, ^{
-        heavyProcessing(eventCopy, scrollDeltaAxis1, scrollDeltaAxis2, tickTime);
+        if (filterBounce) {
+            /// Ignore stray ticks from worn scroll wheels. See WheelBounceFilter.swift
+            [WheelBounceFilter filterTickWithDeltaAxis1:scrollDeltaAxis1 deltaAxis2:scrollDeltaAxis2 time:tickTime send:^{
+                heavyProcessing(eventCopy, scrollDeltaAxis1, scrollDeltaAxis2, tickTime);
+            } discard:^{
+                CFRelease(eventCopy);
+            }];
+        } else {
+            heavyProcessing(eventCopy, scrollDeltaAxis1, scrollDeltaAxis2, tickTime);
+        }
     });
     
     return NULL;

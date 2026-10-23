@@ -14628,6 +14628,64 @@
         }
       }
     },
+    "scroll.wheel-bounce-filter" : {
+      "comment" : "Toggle on the Scrolling tab that ignores the stray ticks in the wrong direction that worn scroll wheels send (the page jumps back while scrolling).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fix Jumpy Scroll Wheel"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正滾輪亂跳"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修复滚轮乱滚"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正滾輪亂跳"
+          }
+        }
+      }
+    },
+    "scroll.wheel-bounce-filter.hint" : {
+      "comment" : "Toggle on the Scrolling tab that ignores the stray ticks in the wrong direction that worn scroll wheels send (the page jumps back while scrolling).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignores the stray notches in the wrong direction that worn scroll wheels send, which make the page jump back while you scroll. Right after scrolling, changing direction takes two notches"
+          }
+        },
+        "zh-HK" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "老化的滾輪會不時送出反方向的訊號，讓頁面在捲動時往回跳。開啟後會忽略這些訊號。剛捲動完就反向時，需要捲兩格才會反向"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "老化的滚轮会不时发出反方向的信号，让页面在滚动时往回跳。开启后会忽略这些信号。刚滚动完就反向时，需要滚两格才会反向"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "老化的滾輪會不時送出反方向的訊號，讓頁面在捲動時往回跳。開啟後會忽略這些訊號。剛捲動完就反向時，需要捲兩格才會反向"
+          }
+        }
+      }
+    },
     "scroll.windows-mode" : {
       "comment" : "Toggle on the Scrolling tab for Windows-style linear scrolling (no acceleration, same distance for every notch of the scroll wheel).",
       "localizations" : {

@@ -20,6 +20,7 @@ class ScrollTabController: NSViewController {
     var reverseDirection = ConfigValue<Bool>(configPath: "Scroll.reverseDirection")
     var scrollSpeed = ConfigValue<String>(configPath: "Scroll.speed")
     var windowsMode = ConfigValue<Bool>(configPath: "Scroll.windowsMode")
+    var wheelBounceFilter = ConfigValue<Bool>(configPath: "Scroll.wheelBounceFilter")
     var precise = ConfigValue<Bool>(configPath: "Scroll.precise")
     var horizontalMod = ConfigValue<UInt>(configPath: "Scroll.modifiers.horizontal")
     var zoomMod = ConfigValue<UInt>(configPath: "Scroll.modifiers.zoom")
@@ -86,16 +87,16 @@ class ScrollTabController: NSViewController {
     
     /// Init
     
-    private func makeWindowsModeSection() -> NSView {
+    private func makeToggleSection(_ value: ConfigValue<Bool>, title: String, hint hintString: String) -> NSView {
         
-        /// Toggle for Windows-style scrolling (`Scroll.windowsMode`, see `ScrollConfig.windowsMode`)
+        /// Toggle with a hint below, e.g. for Windows-style scrolling (`Scroll.windowsMode`, see `ScrollConfig.windowsMode`)
         ///     Built in code instead of in Main.storyboard. Mirrors the layout of the 'Trackpad Simulation' toggle and hint.
         
-        let toggle = NSButton(checkboxWithTitle: MFLocalizedString("scroll.windows-mode", comment: ""), target: nil, action: nil)
-        windowsMode.bindingTarget <~ toggle.reactive.boolValues
-        toggle.reactive.boolValue <~ windowsMode.producer
+        let toggle = NSButton(checkboxWithTitle: title, target: nil, action: nil)
+        value.bindingTarget <~ toggle.reactive.boolValues
+        toggle.reactive.boolValue <~ value.producer
         
-        let hint = NSTextField(wrappingLabelWithString: MFLocalizedString("scroll.windows-mode.hint", comment: ""))
+        let hint = NSTextField(wrappingLabelWithString: hintString)
         hint.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         hint.textColor = .secondaryLabelColor
         hint.controlSize = .small
@@ -154,11 +155,14 @@ class ScrollTabController: NSViewController {
         reverseDirection.bindingTarget <~ reverseDirectionToggle.reactive.boolValues
         reverseDirectionToggle.reactive.boolValue <~ reverseDirection.producer
         
-        /// Windows-style scrolling
-        let windowsModeSection = makeWindowsModeSection()
+        /// Windows-style scrolling and the wheel bounce filter
+        let windowsModeSection = makeToggleSection(windowsMode, title: MFLocalizedString("scroll.windows-mode", comment: ""), hint: MFLocalizedString("scroll.windows-mode.hint", comment: ""))
+        let wheelBounceFilterSection = makeToggleSection(wheelBounceFilter, title: MFLocalizedString("scroll.wheel-bounce-filter", comment: ""), hint: MFLocalizedString("scroll.wheel-bounce-filter.hint", comment: ""))
         if let index = masterStack.arrangedSubviews.firstIndex(of: reverseDirectionToggle) {
-            masterStack.insertArrangedSubview(windowsModeSection, at: index + 1)
-            windowsModeSection.widthAnchor.constraint(equalTo: masterStack.widthAnchor).isActive = true /// Makes the hint wrap
+            for (i, section) in [windowsModeSection, wheelBounceFilterSection].enumerated() {
+                masterStack.insertArrangedSubview(section, at: index + 1 + i)
+                section.widthAnchor.constraint(equalTo: masterStack.widthAnchor).isActive = true /// Makes the hint wrap
+            }
         }
         
         /// Scroll speed
